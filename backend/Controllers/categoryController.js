@@ -1,9 +1,5 @@
 import cloudinary from "../lib/Cloudinary.js";
-import Category from "../models/categoryModel.js";
-
-// ✅ Create Category
-import Category from "../models/categoryModel.js";
-import cloudinary from "../config/cloudinary.js"; // your cloudinary config file
+import Category from "../models/categoryModel.js";// your cloudinary config file
 
 // ✅ Create Category
 export const createCategory = async (req, res) => {

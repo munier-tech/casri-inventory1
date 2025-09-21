@@ -3,8 +3,6 @@ import { motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, XCircle, PackageSearch } from "lucide-react";
 import useProductsStore from "../../store/useProductsStore";
 
-const API_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : "";
-
 const tabs = [
   { key: "soldout", label: "Alaabaha Dhamaaday", icon: XCircle, color: "text-rose-400" },
   { key: "low", label: "Alaabta sii Dhamaanaya", icon: AlertTriangle, color: "text-yellow-400" },
@@ -46,7 +44,7 @@ const Stock = () => {
         >
           <div className="px-6 py-5 border-b border-gray-700">
             <h2 className="text-2xl font-bold text-white">Qolka Kaydka Alaabta</h2>
-            <p className="text-gray-400">alaabta dhamaatay iyo kuwa u dhow inay dhamaadaan</p>
+            <p className="text-gray-400">Alaabta dhamaatay iyo kuwa u dhow inay dhamaadaan</p>
           </div>
 
           <div className="px-6 pt-4">
@@ -86,7 +84,7 @@ const Stock = () => {
                     <th className="px-4 py-3 text-emerald-300 font-semibold">Magac</th>
                     <th className="px-4 py-3 text-emerald-300 font-semibold">Tirada kuu Taala</th>
                     <th className="px-4 py-3 text-emerald-300 font-semibold">Qaybta ay tirsantahy</th>
-                </tr>
+                  </tr>
                 </thead>
                 <tbody>
                   {listForTab.map((product, index) => (
@@ -99,7 +97,11 @@ const Stock = () => {
                     >
                       <td className="px-4 py-3">
                         {product.image ? (
-                          <img src={`${API_URL}${product.image}`} alt={product.name} className="h-12 w-12 object-cover rounded" />
+                          <img
+                            src={product.image} // Cloudinary URL used directly
+                            alt={product.name}
+                            className="h-12 w-12 object-cover rounded"
+                          />
                         ) : (
                           <span className="text-gray-400">--</span>
                         )}

@@ -55,7 +55,7 @@ const CreateProduct = () => {
     submitData.append("stock", formData.stock);
     submitData.append("lowStockThreshold", formData.lowStockThreshold || 5);
     submitData.append("category", formData.category);
-    if (formData.image) submitData.append("image", formData.image);
+    if (formData.image) submitData.append("image", formData.image); // Cloudinary will handle this on backend
 
     await createProduct(submitData);
 
@@ -63,6 +63,7 @@ const CreateProduct = () => {
       setFormData({
         name: "",
         description: "",
+        price: "",
         cost: "",
         stock: "",
         lowStockThreshold: "",
@@ -116,11 +117,8 @@ const CreateProduct = () => {
                 />
               </div>
 
-              
-
               {/* Price, Cost, Stock */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Qiimaha Hore ee Alaabtu ku Timid ($)</label>
                   <input
@@ -148,7 +146,6 @@ const CreateProduct = () => {
                 </div>
               </div>
 
-             
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Qaybta</label>

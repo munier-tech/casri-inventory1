@@ -1,4 +1,3 @@
-// Homepage.jsx
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,8 +9,6 @@ import { AlertTriangle, XCircle, Zap } from "lucide-react";
 import useProductsStore from "../store/useProductsStore";
 import useCategoryStore from "../store/useCategoryStore";
 import useSalesStore from "../store/UseSalesStore";
-
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : "";
 
 const CreateSale = () => {
   const { products = [], fetchProducts } = useProductsStore();
@@ -94,7 +91,8 @@ const CreateSale = () => {
     }
   };
 
-  const getImageUrl = (url) => (url ? `${BASE_URL}${url}` : "/placeholder.png");
+  // Fixed Cloudinary support
+  const getImageUrl = (url) => (url ? url : "/placeholder.png");
 
   const handleCategoryClick = (category) => {
     setSelectedCategory(category._id);
@@ -131,14 +129,12 @@ const CreateSale = () => {
     return categoryColors[index % categoryColors.length];
   };
 
-  // Filter categories based on search term
   const filteredCategories = categories.filter(category => 
     category.name.toLowerCase().includes(categorySearchTerm.toLowerCase())
   );
 
   const renderCategoriesView = () => (
     <div>
-      {/* Category Search Input */}
       <div className="relative w-full md:w-64 mb-6">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <FiSearch className="h-5 w-5 text-gray-400" />

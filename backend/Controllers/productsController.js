@@ -4,24 +4,24 @@ import Product from "../models/productModel.js";
 // ✅ Create Product
 export const createProduct = async (req, res) => {
   try {
-    console.log("=== CREATE PRODUCT REQUEST ===");
-
     const { name, description, cost, stock, lowStockThreshold, category } = req.body || {};
+    let imageUrl = "";
 
+    // Validate required fields
     if (!name || !cost || !category) {
       return res.status(400).json({
         success: false,
         error: "Name, cost, and category are required",
+        received: { name: !!name, cost: !!cost, category: !!category }
       });
     }
 
-    // ✅ Upload image to Cloudinary
-    let imageUrl = "";
-    if (req.file?.path) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "products",
+    // Upload to Cloudinary if file exists
+    if (req.file) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "products"
       });
-      imageUrl = result.secure_url;
+      imageUrl = uploadResult.secure_url;
     }
 
     const productData = {
@@ -40,13 +40,12 @@ export const createProduct = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Product created successfully",
-      product: savedProduct,
+      product: savedProduct
     });
   } catch (error) {
-    console.error("❌ Error creating product:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error.message
     });
   }
 };
@@ -55,14 +54,17 @@ export const createProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
   try {
     const products = await Product.find().populate("category", "name");
+
     res.status(200).json({
       success: true,
       count: products.length,
-      products,
+      products
     });
   } catch (error) {
-    console.error("❌ Error fetching products:", error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
@@ -70,66 +72,79 @@ export const getProducts = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { name, description, cost, stock, lowStockThreshold, category } = req.body || {};
-
-    const updateData = {};
-    if (name !== undefined) updateData.name = name.trim();
-    if (description !== undefined) updateData.description = description.trim();
-    if (cost !== undefined) updateData.cost = parseFloat(cost);
-    if (stock !== undefined) updateData.stock = parseInt(stock);
-    if (lowStockThreshold !== undefined) updateData.lowStockThreshold = parseInt(lowStockThreshold);
-    if (category !== undefined) updateData.category = category.trim();
-
-    // ✅ Upload new image if provided
-    if (req.file?.path) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "products",
-      });
-      updateData.image = result.secure_url;
-    }
-
-    const product = await Product.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await Product.findById(req.params.id);
 
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: "Product not found",
+        error: "Product not found"
       });
     }
+
+    // If new image uploaded → delete old one from Cloudinary
+    if (req.file) {
+      if (product.image) {
+        const publicId = product.image.split("/").slice(-1)[0].split(".")[0];
+        await cloudinary.uploader.destroy(`products/${publicId}`);
+      }
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "products"
+      });
+      product.image = uploadResult.secure_url;
+    }
+
+    if (name) product.name = name.trim();
+    if (description) product.description = description.trim();
+    if (cost !== undefined) product.cost = parseFloat(cost);
+    if (stock !== undefined) product.stock = parseInt(stock);
+    if (lowStockThreshold !== undefined) product.lowStockThreshold = parseInt(lowStockThreshold);
+    if (category) product.category = category.trim();
+
+    const updatedProduct = await product.save();
 
     res.status(200).json({
       success: true,
       message: "Product updated successfully",
-      product,
+      product: updatedProduct
     });
   } catch (error) {
-    console.error("❌ Error updating product:", error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
 // ✅ Delete Product
 export const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findById(req.params.id);
 
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: "Product not found",
+        error: "Product not found"
       });
     }
+
+    // ❌ Delete image from Cloudinary if exists
+    if (product.image) {
+      const publicId = product.image.split("/").slice(-1)[0].split(".")[0];
+      await cloudinary.uploader.destroy(`products/${publicId}`);
+    }
+
+    await product.deleteOne();
 
     res.status(200).json({
       success: true,
       message: "Product deleted successfully",
-      deletedProduct: product,
+      deletedProduct: product
     });
   } catch (error) {
-    console.error("❌ Error deleting product:", error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
@@ -141,17 +156,19 @@ export const getProductById = async (req, res) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: "Product not found",
+        error: "Product not found"
       });
     }
 
     res.status(200).json({
       success: true,
-      product,
+      product
     });
   } catch (error) {
-    console.error("❌ Error fetching product:", error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
@@ -159,16 +176,18 @@ export const getProductById = async (req, res) => {
 export const getLowStockProducts = async (req, res) => {
   try {
     const products = await Product.find({
-      $expr: { $lte: ["$stock", "$lowStockThreshold"] },
+      $expr: { $lte: ["$stock", "$lowStockThreshold"] }
     }).populate("category", "name");
 
     res.status(200).json({
       success: true,
       count: products.length,
-      products,
+      products
     });
   } catch (error) {
-    console.error("❌ Error fetching low stock products:", error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 };

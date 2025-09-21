@@ -5,8 +5,6 @@ import { motion } from "framer-motion";
 import useProductsStore from "../../store/useProductsStore";
 import useCategoryStore from "../../store/useCategoryStore";
 
-const API_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : ""; 
-
 const GetProducts = () => {
   const { products, fetchProducts, deleteProduct, updateProduct } = useProductsStore();
   const { categories, fetchCategories } = useCategoryStore();
@@ -31,7 +29,7 @@ const GetProducts = () => {
     if (window.confirm("Ma hubtaa inaad rabto inaad tirtirto alaabtan?")) {
       try {
         await deleteProduct(id);
-        toast.success("Alaabta waa  tirtiray");
+        toast.success("Alaabta waa la tirtiray");
       } catch {
         toast.error("Khalad ayaa dhacay marka la tirtiray alaabta");
       }
@@ -48,7 +46,7 @@ const GetProducts = () => {
       category: product.category?._id || "",
       image: null,
     });
-    setImagePreview(product.image ? `${API_URL}${product.image}` : null);
+    setImagePreview(product.image || null); // Cloudinary URL already stored
   };
 
   const handleImageChange = (e) => {
@@ -69,7 +67,7 @@ const GetProducts = () => {
       formData.append("stock", updatedData.stock);
       formData.append("lowStockThreshold", updatedData.lowStockThreshold);
       formData.append("category", updatedData.category);
-      if (updatedData.image) formData.append("image", updatedData.image);
+      if (updatedData.image) formData.append("image", updatedData.image); // backend uploads to Cloudinary
 
       await updateProduct(id, formData);
       toast.success("Alaabta si guul leh ayaa loo cusboonaysiiyay");
@@ -152,9 +150,7 @@ const GetProducts = () => {
                   products.map((product, index) => (
                     <motion.tr
                       key={product._id}
-                      className={`border-b border-gray-700 ${
-                        index % 2 === 0 ? "bg-gray-800" : "bg-gray-800/50"
-                      }`}
+                      className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-800/50"}`}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
@@ -171,7 +167,7 @@ const GetProducts = () => {
                             />
                             {imagePreview && (
                               <img
-                                src={imagePreview.startsWith("http") ? imagePreview : `${API_URL}${imagePreview}`}
+                                src={imagePreview}
                                 alt="preview"
                                 className="h-12 w-12 object-cover rounded mt-2"
                               />
@@ -179,7 +175,7 @@ const GetProducts = () => {
                           </div>
                         ) : product.image ? (
                           <img
-                            src={`${API_URL}${product.image}`}
+                            src={product.image} // Already full Cloudinary URL
                             alt={product.name}
                             className="h-12 w-12 object-cover rounded"
                           />
@@ -194,9 +190,7 @@ const GetProducts = () => {
                           <input
                             type="text"
                             value={updatedData.name}
-                            onChange={(e) =>
-                              setUpdatedData({ ...updatedData, name: e.target.value })
-                            }
+                            onChange={(e) => setUpdatedData({ ...updatedData, name: e.target.value })}
                             className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white"
                           />
                         ) : (
@@ -204,17 +198,13 @@ const GetProducts = () => {
                         )}
                       </td>
 
-                      
-
                       {/* Cost */}
                       <td className="px-4 py-3">
                         {editingProduct === product._id ? (
                           <input
                             type="number"
                             value={updatedData.cost}
-                            onChange={(e) =>
-                              setUpdatedData({ ...updatedData, cost: e.target.value })
-                            }
+                            onChange={(e) => setUpdatedData({ ...updatedData, cost: e.target.value })}
                             className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white"
                           />
                         ) : (
@@ -228,9 +218,7 @@ const GetProducts = () => {
                           <input
                             type="number"
                             value={updatedData.stock}
-                            onChange={(e) =>
-                              setUpdatedData({ ...updatedData, stock: e.target.value })
-                            }
+                            onChange={(e) => setUpdatedData({ ...updatedData, stock: e.target.value })}
                             className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white"
                           />
                         ) : (
@@ -243,9 +231,7 @@ const GetProducts = () => {
                         {editingProduct === product._id ? (
                           <select
                             value={updatedData.category}
-                            onChange={(e) =>
-                              setUpdatedData({ ...updatedData, category: e.target.value })
-                            }
+                            onChange={(e) => setUpdatedData({ ...updatedData, category: e.target.value })}
                             className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white"
                           >
                             <option value="">-- Xulo Qaybta --</option>
@@ -313,10 +299,7 @@ const GetProducts = () => {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan={content.tableHeaders.length}
-                      className="px-4 py-8 text-center text-gray-400"
-                    >
+                    <td colSpan={content.tableHeaders.length} className="px-4 py-8 text-center text-gray-400">
                       {content.noProducts}
                     </td>
                   </tr>

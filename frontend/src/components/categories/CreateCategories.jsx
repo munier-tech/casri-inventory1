@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, List, Edit, Trash2, X, Check, ImageIcon, Upload } from "lucide-react";
 import useCategoryStore from "../../store/useCategoryStore";
 
-const API_BASE = import.meta.env.MODE === "development" ? "http://localhost:3000" : "";
-
 const Categories = ({ language = "so" }) => {
   const {
     categories,
@@ -46,9 +44,7 @@ const Categories = ({ language = "so" }) => {
     if (file) {
       setFormImage(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormImagePreview(reader.result);
-      };
+      reader.onloadend = () => setFormImagePreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
@@ -58,9 +54,7 @@ const Categories = ({ language = "so" }) => {
     if (file) {
       setEditImage(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditImagePreview(reader.result);
-      };
+      reader.onloadend = () => setEditImagePreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
@@ -90,20 +84,14 @@ const Categories = ({ language = "so" }) => {
 
     await updateCategory(editingId, data);
     if (!error) {
-      setEditingId(null);
-      setEditFormData({ name: "", description: "" });
-      setEditImage(null);
-      setEditImagePreview(null);
+      cancelEditing();
     }
   };
 
   const startEditing = (category) => {
     setEditingId(category._id);
-    setEditFormData({
-      name: category.name,
-      description: category.description || "",
-    });
-    setEditImagePreview(category.imageUrl ? `${API_BASE}${category.imageUrl}` : null);
+    setEditFormData({ name: category.name, description: category.description || "" });
+    setEditImagePreview(category.imageUrl || null);
   };
 
   const cancelEditing = () => {
@@ -182,7 +170,9 @@ const Categories = ({ language = "so" }) => {
               <div>
                 <h2 className="text-2xl font-bold text-white">{content[language].title}</h2>
                 <p className="text-gray-400">
-                  {language === "so" ? "Maamul qaybaha alaabtaaga" : "Manage your product categories"}
+                  {language === "so"
+                    ? "Maamul qaybaha alaabtaaga"
+                    : "Manage your product categories"}
                 </p>
               </div>
             </div>
@@ -200,7 +190,7 @@ const Categories = ({ language = "so" }) => {
           {/* Content */}
           <div className="p-6">
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6 p-4 bg-red-900/30 border border-red-800 rounded-xl text-red-300 flex items-center"
@@ -229,218 +219,118 @@ const Categories = ({ language = "so" }) => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {categories.map((category) => (
-                    <motion.div 
-                      key={category._id} 
+                    <motion.div
+                      key={category._id}
                       className="bg-gradient-to-b from-gray-700/50 to-gray-800 rounded-2xl p-4 border border-gray-600 hover:border-gray-500 transition-all"
                       whileHover={{ y: -5 }}
                       layout
                     >
-                      {editingId === category._id ? (
-                        <form onSubmit={handleEditSubmit} className="space-y-4">
-                          <div className="flex flex-col md:flex-row gap-4">
-                            <div className="flex-1 space-y-3">
-                              <input
-                                type="text"
-                                name="name"
-                                placeholder={content[language].nameLabel}
-                                value={editFormData.name}
-                                onChange={handleEditChange}
-                                className="w-full p-3 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                required
-                              />
-                              <textarea
-                                name="description"
-                                placeholder={content[language].descriptionLabel}
-                                value={editFormData.description}
-                                onChange={handleEditChange}
-                                rows={3}
-                                className="w-full p-3 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                              />
-                            </div>
-                            
-                            <div className="flex flex-col items-center">
-                              <div className="relative mb-2">
-                                <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-dashed border-gray-600 flex items-center justify-center">
-                                  {editImagePreview ? (
-                                    <img 
-                                      src={editImagePreview} 
-                                      alt="Preview" 
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <ImageIcon className="h-8 w-8 text-gray-500" />
-                                  )}
-                                </div>
-                              </div>
-                              <label className="flex items-center justify-center text-sm text-blue-400 hover:text-blue-300 cursor-pointer">
-                                <Upload className="h-4 w-4 mr-1" />
-                                <span>{content[language].changeImage}</span>
-                                <input 
-                                  type="file" 
-                                  accept="image/*" 
-                                  onChange={handleEditImageChange} 
-                                  className="hidden" 
-                                />
-                              </label>
-                            </div>
+                      <div className="flex flex-col md:flex-row gap-4">
+                        {category.imageUrl && (
+                          <div className="flex-shrink-0">
+                            <img
+                              src={category.imageUrl}
+                              alt={category.name}
+                              className="w-24 h-24 object-cover rounded-xl"
+                            />
                           </div>
-                          
-                          <div className="flex justify-end space-x-2 pt-2">
-                            <button 
-                              type="button" 
-                              onClick={cancelEditing} 
-                              className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-xl text-white font-medium flex items-center"
-                            >
-                              <X className="w-4 h-4 mr-1" />
-                              {content[language].cancel}
-                            </button>
-                            <button 
-                              type="submit" 
-                              className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-xl text-white font-medium flex items-center"
-                            >
-                              <Check className="w-4 h-4 mr-1" />
-                              {content[language].save}
-                            </button>
-                          </div>
-                        </form>
-                      ) : (
-                        <div className="flex flex-col md:flex-row gap-4">
-                          {category.imageUrl && (
-                            <div className="flex-shrink-0">
-                              <img
-                                src={`${API_BASE}${category.imageUrl}`}
-                                alt={category.name}
-                                className="w-24 h-24 object-cover rounded-xl"
-                              />
+                        )}
+
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="text-lg font-semibold text-white mb-1">{category.name}</h4>
+                              {category.description && (
+                                <p className="text-gray-400 mb-2">{category.description}</p>
+                              )}
+                              <p className="text-sm text-gray-500">
+                                {language === "so"
+                                  ? `Taariikhda: ${new Date(category.createdAt).toLocaleDateString()}`
+                                  : `Created: ${new Date(category.createdAt).toLocaleDateString()}`}
+                              </p>
                             </div>
-                          )}
-                          
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="text-lg font-semibold text-white mb-1">{category.name}</h4>
-                                {category.description && (
-                                  <p className="text-gray-400 mb-2">{category.description}</p>
-                                )}
-                                <p className="text-sm text-gray-500">
-                                  {language === "so"
-                                    ? `Taariikhda: ${new Date(category.createdAt).toLocaleDateString()}`
-                                    : `Created: ${new Date(category.createdAt).toLocaleDateString()}`}
-                                </p>
-                              </div>
-                              
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => startEditing(category)}
-                                  className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded-xl transition-colors"
-                                  title={content[language].edit}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(category._id)}
-                                  className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-xl transition-colors"
-                                  title={content[language].delete}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
+
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => startEditing(category)}
+                                className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded-xl transition-colors"
+                                title={content[language].edit}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(category._id)}
+                                className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-xl transition-colors"
+                                title={content[language].delete}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
                         </div>
-                      )}
+                      </div>
                     </motion.div>
                   ))}
                 </div>
               )}
 
-              {/* Create Category Modal */}
+              {/* Edit Modal */}
               <AnimatePresence>
-                {isCreating && (
+                {editingId && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                    onClick={() => setIsCreating(false)}
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
                   >
                     <motion.div
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.9, opacity: 0 }}
-                      className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-700 shadow-2xl"
-                      onClick={(e) => e.stopPropagation()}
+                      initial={{ scale: 0.8 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0.8 }}
+                      className="bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-700"
                     >
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-bold text-white">{content[language].createTitle}</h3>
-                        <button
-                          onClick={() => setIsCreating(false)}
-                          className="p-1 text-gray-400 hover:text-white rounded-full hover:bg-gray-700"
-                        >
-                          <X className="h-5 w-5" />
-                        </button>
-                      </div>
-                      
-                      <form onSubmit={handleCreateSubmit} className="space-y-4">
-                        <input
-                          type="text"
-                          name="name"
-                          placeholder={content[language].nameLabel}
-                          value={formData.name}
-                          onChange={handleCreateChange}
-                          className="w-full p-3 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          required
-                        />
-                        <textarea
-                          name="description"
-                          placeholder={content[language].descriptionLabel}
-                          value={formData.description}
-                          onChange={handleCreateChange}
-                          rows={3}
-                          className="w-full p-3 rounded-xl bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        />
-                        
-                        <div className="border-2 border-dashed border-gray-600 rounded-xl p-4 text-center">
-                          {formImagePreview ? (
-                            <div className="mb-3">
-                              <img 
-                                src={formImagePreview} 
-                                alt="Preview" 
-                                className="mx-auto h-32 object-cover rounded-lg"
-                              />
-                            </div>
-                          ) : (
-                            <div className="py-6">
-                              <ImageIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
-                              <p className="text-gray-400 text-sm mb-2">{content[language].imageLabel}</p>
-                            </div>
-                          )}
-                          
-                          <label className="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-xl text-white cursor-pointer">
-                            <Upload className="h-4 w-4 mr-2" />
-                            {formImagePreview ? content[language].changeImage : content[language].uploadImage}
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={handleCreateImageChange} 
-                              className="hidden" 
-                            />
-                          </label>
+                      <h3 className="text-xl font-bold text-white mb-4">{content[language].editTitle}</h3>
+                      <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <div>
+                          <label className="block text-gray-300 mb-1">{content[language].nameLabel}</label>
+                          <input
+                            type="text"
+                            name="name"
+                            value={editFormData.name}
+                            onChange={handleEditChange}
+                            className="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 text-white"
+                            required
+                          />
                         </div>
-                        
-                        <div className="flex justify-end space-x-2 pt-2">
-                          <button 
-                            type="button" 
-                            onClick={() => setIsCreating(false)} 
-                            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-xl text-white font-medium"
+                        <div>
+                          <label className="block text-gray-300 mb-1">{content[language].descriptionLabel}</label>
+                          <textarea
+                            name="description"
+                            value={editFormData.description}
+                            onChange={handleEditChange}
+                            className="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-gray-300 mb-1">{content[language].imageLabel}</label>
+                          {editImagePreview && (
+                            <img src={editImagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-xl mb-2" />
+                          )}
+                          <input type="file" accept="image/*" onChange={handleEditImageChange} />
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={cancelEditing}
+                            className="px-4 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-white"
                           >
                             {content[language].cancel}
                           </button>
-                          <button 
-                            type="submit" 
-                            className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-xl text-white font-medium flex items-center"
+                          <button
+                            type="submit"
+                            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white"
                           >
-                            <Check className="w-4 h-4 mr-1" />
                             {content[language].save}
                           </button>
                         </div>
