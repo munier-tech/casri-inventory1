@@ -1,26 +1,39 @@
 import cloudinary from "../lib/Cloudinary.js";
 import Product from "../models/productModel.js";
 
+// helper for buffer uploads (Vercel/Netlify)
+const uploadBufferToCloudinary = (fileBuffer, folder) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream({ folder }, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+    stream.end(fileBuffer);
+  });
+};
+
 // ✅ Create Product
 export const createProduct = async (req, res) => {
   try {
     const { name, description, cost, stock, lowStockThreshold, category } = req.body || {};
     let imageUrl = "";
 
-    // Validate required fields
     if (!name || !cost || !category) {
       return res.status(400).json({
         success: false,
         error: "Name, cost, and category are required",
-        received: { name: !!name, cost: !!cost, category: !!category }
+        received: { name: !!name, cost: !!cost, category: !!category },
       });
     }
 
-    // Upload to Cloudinary if file exists
+    // Upload to Cloudinary
     if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "products"
-      });
+      let uploadResult;
+      if (req.file.buffer) {
+        uploadResult = await uploadBufferToCloudinary(req.file.buffer, "products");
+      } else {
+        uploadResult = await cloudinary.uploader.upload(req.file.path, { folder: "products" });
+      }
       imageUrl = uploadResult.secure_url;
     }
 
@@ -40,31 +53,20 @@ export const createProduct = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Product created successfully",
-      product: savedProduct
+      product: savedProduct,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
 // ✅ Get All Products
-export const getProducts = async (req, res) => {
+export const getProducts = async (_req, res) => {
   try {
     const products = await Product.find().populate("category", "name");
-
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      products
-    });
+    res.status(200).json({ success: true, count: products.length, products });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -75,21 +77,22 @@ export const updateProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        error: "Product not found"
-      });
+      return res.status(404).json({ success: false, error: "Product not found" });
     }
 
-    // If new image uploaded → delete old one from Cloudinary
+    // Handle new image upload
     if (req.file) {
       if (product.image) {
         const publicId = product.image.split("/").slice(-1)[0].split(".")[0];
         await cloudinary.uploader.destroy(`products/${publicId}`);
       }
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "products"
-      });
+
+      let uploadResult;
+      if (req.file.buffer) {
+        uploadResult = await uploadBufferToCloudinary(req.file.buffer, "products");
+      } else {
+        uploadResult = await cloudinary.uploader.upload(req.file.path, { folder: "products" });
+      }
       product.image = uploadResult.secure_url;
     }
 
@@ -105,13 +108,10 @@ export const updateProduct = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Product updated successfully",
-      product: updatedProduct
+      product: updatedProduct,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -121,13 +121,9 @@ export const deleteProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        error: "Product not found"
-      });
+      return res.status(404).json({ success: false, error: "Product not found" });
     }
 
-    // ❌ Delete image from Cloudinary if exists
     if (product.image) {
       const publicId = product.image.split("/").slice(-1)[0].split(".")[0];
       await cloudinary.uploader.destroy(`products/${publicId}`);
@@ -138,13 +134,10 @@ export const deleteProduct = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Product deleted successfully",
-      deletedProduct: product
+      deletedProduct: product,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -152,42 +145,24 @@ export const deleteProduct = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate("category", "name");
-
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        error: "Product not found"
-      });
+      return res.status(404).json({ success: false, error: "Product not found" });
     }
-
-    res.status(200).json({
-      success: true,
-      product
-    });
+    res.status(200).json({ success: true, product });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
 // ✅ Get Low Stock Products
-export const getLowStockProducts = async (req, res) => {
+export const getLowStockProducts = async (_req, res) => {
   try {
     const products = await Product.find({
-      $expr: { $lte: ["$stock", "$lowStockThreshold"] }
+      $expr: { $lte: ["$stock", "$lowStockThreshold"] },
     }).populate("category", "name");
 
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      products
-    });
+    res.status(200).json({ success: true, count: products.length, products });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
