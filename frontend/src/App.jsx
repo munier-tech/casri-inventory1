@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
-import { Loader } from 'lucide-react';
+import { Loader, Loader2 } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Homepage from './pages/Homepage';
 import SignUp from './pages/auth/SignUp';
@@ -64,7 +64,7 @@ const App = () => {
   if (isLoading || !authChecked) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-900">
-        <Loader className="animate-spin text-white" size={40} />
+        <Loader2 className="animate-spin text-white" size={40} />
       </div>
     );
   }
