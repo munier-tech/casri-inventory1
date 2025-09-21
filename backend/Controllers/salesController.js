@@ -204,39 +204,51 @@ export const getSalesByDate = async (req, res) => {
   }
 };
 
-// Get all users' sales by date
 export const getAllUsersSalesByDate = async (req, res) => {
   try {
     const { date } = req.params;
     const start = dayjs(date).startOf("day").toDate();
     const end = dayjs(date).endOf("day").toDate();
 
-    const users = await User.find({ role: { $in: ["employee", "admin"] } });
+    // Fetch all sales for the given date and populate user + product
+    const sales = await Sale.find({
+      createdAt: { $gte: start, $lte: end },
+    })
+      .populate("user", "username role")  // ✅ Populate username & role
+      .populate("product", "name cost");  // ✅ Populate product name & cost
 
-    const results = await Promise.all(
-      users.map(async (user) => {
-        const sales = await Sale.find({
-          user: user._id,
-          createdAt: { $gte: start, $lte: end },
-        }).populate("product", "name cost");
+    if (!sales.length) {
+      return res.status(404).json({ message: `No sales found on ${date}` });
+    }
 
-        return {
-          username: user.username,
-          role: user.role,
-          sales,
-          total: sales.reduce((sum, s) => sum + s.totalAmount, 0),
+    // Group sales by user
+    const grouped = sales.reduce((acc, sale) => {
+      const userId = sale.user?._id.toString() || "unknown";
+
+      if (!acc[userId]) {
+        acc[userId] = {
+          username: sale.user?.username || "Unknown",
+          role: sale.user?.role || "N/A",
+          sales: [],
+          total: 0,
         };
-      })
-    );
+      }
 
-    const filteredResults = results.filter(r => r.sales.length > 0);
-    if (!filteredResults.length) return res.status(404).json({ message: `No sales found on ${date} for any user` });
+      acc[userId].sales.push(sale);
+      acc[userId].total += sale.totalAmount;
 
-    res.status(200).json({ message: `Sales for ${date} fetched`, data: filteredResults });
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      message: `Sales for ${dayjs(date).format("MM-DD-YYYY")} fetched`,
+      data: Object.values(grouped),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // Update Sale
 export const updateSale = async (req, res) => {

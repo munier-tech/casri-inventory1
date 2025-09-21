@@ -1,23 +1,19 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingCart,
-  Users,
   Home,
+  ShoppingBasket,
+  ShoppingCart,
+  Boxes,
+  PlusCircle,
+  Calendar,
   FileText,
-  DollarSign,
-  User,
-  ArrowUp,
-  ArrowDown,
+  Receipt,
   FileTerminalIcon,
   FileScanIcon,
-  PlusCircle,
-  ShoppingBasket,
-  Calendar,
-  Receipt,
+  User,
   ChevronRight,
-  Globe,
-  Boxes
+  Globe
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import useProductsStore from "../store/useProductsStore";
@@ -28,7 +24,6 @@ const Dashboard = () => {
   const [language, setLanguage] = useState("so"); // 'so' for Somali, 'en' for English
   const { products: rawProducts } = useProductsStore();
 
-  // ✅ Ensure products is always an array
   const products = Array.isArray(rawProducts) ? rawProducts : [];
 
   const toggleTabExpansion = (tabId) => {
@@ -38,7 +33,6 @@ const Dashboard = () => {
     }));
   };
 
-  // Language content
   const content = {
     so: {
       dashboard: "Dashboard",
@@ -63,17 +57,6 @@ const Dashboard = () => {
         financialLog: "Diiwaanka Maaliyadda",
         financialHistory: "Taariikhda Maaliyadda"
       },
-      stats: [
-        { title: "Amaahda Maanta", value: "Amaah", change: "#" },
-        { title: "Iibka Maanta", value: "$0", change: "$" },
-        { title: "Shaqaalaha", value: "Shaqaalaha" },
-        { title: "Taariikhda", value: "Taariikhda" },
-        { title: "Taariikhda Iibka", value: "Iibka" },
-        { title: "Taariikhda Amaahda", value: "Amaah" },
-        { title: "Xisaab Xidhka", value: "Xisaab" },
-        { title: "Taariikhda Xisaabta", value: "Xisaab" },
-        { title: "Kaydka", value: "Kaydka", change: "#" }
-      ],
       welcome: "ku Soo dhawoow Dashboard-ka",
       welcomeDesc: "Halkan waxaad ka heli kartaa macluumaadka guud ee ganacsigaaga iyo xogta dhaqaale.",
       selectSubtab: "Dooro qeybta hoose ee aad rabto inaad wax ka qabato.",
@@ -105,17 +88,6 @@ const Dashboard = () => {
         financialLog: "Financial Log",
         financialHistory: "Financial History"
       },
-      stats: [
-        { title: "Today's Liability", value: "Liability", change: "#" },
-        { title: "Today's Sales", value: "$0", change: "$" },
-        { title: "Staff", value: "Staff" },
-        { title: "History", value: "History" },
-        { title: "Sales History", value: "Sales" },
-        { title: "Liability History", value: "Liability" },
-        { title: "Accounting", value: "Accounting" },
-        { title: "Accounting History", value: "Accounting" },
-        { title: "Stock", value: "Stock", change: "#" }
-      ],
       welcome: "Welcome to your Dashboard",
       welcomeDesc: "Here you can find an overview of your business and financial data.",
       selectSubtab: "Select a sub-tab to perform operations.",
@@ -126,30 +98,6 @@ const Dashboard = () => {
     }
   };
 
-  // ✅ Safely compute total sales
-  const totalSales = products.reduce((sum, product) => {
-    const quantity = product.quantity ?? 1;
-    const price = product.price ?? 0;
-    return sum + price * quantity;
-  }, 0);
-
-  content.so.stats[1].value = `$${totalSales}`;
-  content.en.stats[1].value = `$${totalSales}`;
-
-  // Stats cards data
-  const stats = [
-    { icon: <DollarSign size={20} />, path: "/DialyLiability" },
-    { icon: <ShoppingCart size={20} />, path: "/DailySales" },
-    { icon: <Users size={20} />, path: "/UserProducts" },
-    { icon: <Users size={20} />, path: "/UserProductsByDate" },
-    { icon: <FileText size={20} />, path: "/HistorySalesDate" },
-    { icon: <FileText size={20} />, path: "/HistoryLiabilityByDate" },
-    { icon: <FileTerminalIcon size={20} />, path: "/FinancialLogForm" },
-    { icon: <FileTerminalIcon size={20} />, path: "/FinancialLogDate" },
-    { icon: <Boxes size={20} />, path: "/stock" },
-  ];
-
-  // Dashboard Tabs
   const tabs = [
     { 
       id: "dashboard", 
@@ -312,81 +260,19 @@ const Dashboard = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                {activeTab === "dashboard" && (
-                  <div>
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-                      {stats.map((stat, index) => (
-                        <Link to={stat.path} key={index}>
-                          <motion.div 
-                            className="bg-gray-800/80 backdrop-blur-sm p-5 rounded-2xl shadow-lg border border-gray-700 hover:border-emerald-500/30 transition-all duration-300 h-full"
-                            whileHover={{ y: -5, scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <div className="flex justify-between items-start mb-4">
-                              <div>
-                                <p className="text-sm font-medium text-gray-400 mb-1">
-                                  {content[language].stats[index].title}
-                                </p>
-                                <p className="text-2xl font-bold text-white">
-                                  {content[language].stats[index].value}
-                                </p>
-                              </div>
-                              <div className={`p-3 rounded-xl ${
-                                content[language].stats[index].change && content[language].stats[index].change.includes('+') 
-                                  ? "bg-emerald-900/30 text-emerald-400" 
-                                  : "bg-gray-700/50 text-emerald-400"
-                              }`}>
-                                {stat.icon}
-                              </div>
-                            </div>
-                            {content[language].stats[index].change && (
-                              <div className="flex items-center pt-3 border-t border-gray-700/50">
-                                {content[language].stats[index].change.includes('+') ? (
-                                  <ArrowUp size={16} className="text-emerald-400" />
-                                ) : (
-                                  <ArrowDown size={16} className="text-rose-400" />
-                                )}
-                                <span className={`text-sm ml-1 ${
-                                  content[language].stats[index].change.includes('+') 
-                                    ? "text-emerald-400" 
-                                    : "text-rose-400"
-                                }`}>
-                                  {content[language].stats[index].change}
-                                </span>
-                              </div>
-                            )}
-                          </motion.div>
-                        </Link>
-                      ))}
-                    </div>
-
-                    {/* Additional Dashboard Content */}
-                    <div className="bg-gray-800/80 backdrop-blur-sm p-7 rounded-2xl shadow-lg border border-gray-700 mb-8">
-                      <h2 className="text-2xl font-bold text-white mb-4">
-                        {content[language].welcome}
-                      </h2>
-                      <p className="text-gray-300 text-lg">
-                        {content[language].welcomeDesc}
-                      </p>
-                    </div>
-
-                    {/* Dashboard Content Component */}
-                    <DashboardContent language={language} content={content[language]} />
-                  </div>
-                )}
-
-                {activeTab !== "dashboard" && (
-                  <div className="bg-gray-800/80 backdrop-blur-sm p-7 rounded-2xl shadow-lg border border-gray-700">
+                {/* Only welcome + DashboardContent */}
+                <div>
+                  <div className="bg-gray-800/80 backdrop-blur-sm p-7 rounded-2xl shadow-lg border border-gray-700 mb-8">
                     <h2 className="text-2xl font-bold text-white mb-4">
-                      {tabs.find(tab => tab.id === activeTab)?.label}
+                      {content[language].welcome}
                     </h2>
                     <p className="text-gray-300 text-lg">
-                      {content[language].selectSubtab}
+                      {content[language].welcomeDesc}
                     </p>
                   </div>
-                )}
+
+                  <DashboardContent language={language} content={content[language]} />
+                </div>
               </motion.div>
             </AnimatePresence>
           </div>
