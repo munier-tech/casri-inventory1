@@ -9,7 +9,8 @@ import {
   getMyDailySales,
   getUsersDailySales,
   getSalesByDate,
-  getAllUsersSalesByDate
+  getAllUsersSalesByDate,
+  createSalesByDate
 } from "../Controllers/salesController.js";
 import { protectedRoute } from "../middlewares/authMiddleware.js";
 
@@ -33,6 +34,7 @@ router.route("/:id")
 router.get("/daily/today", getDailySales);
 router.get("/daily/my", getMyDailySales);
 router.get("/daily/users", getUsersDailySales);
+router.post("/byDate", createSalesByDate);
 router.get("/date/:date", getSalesByDate);
 router.get("/all/date/:date", getAllUsersSalesByDate);
 

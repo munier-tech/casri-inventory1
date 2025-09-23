@@ -21,7 +21,7 @@ export const createProduct = async (req, res) => {
     if (!name || !cost || !category) {
       return res.status(400).json({
         success: false,
-        error: "Name, cost, and category are required",
+        error: "Magaca, Qiimaha Alaabta, iyo  qaybta ay ka tirsan Buuxi",
         received: { name: !!name, cost: !!cost, category: !!category },
       });
     }
@@ -52,7 +52,7 @@ export const createProduct = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Product created successfully",
+      message: "Alaabta si guul leh ayaa la abuuray",
       product: savedProduct,
     });
   } catch (error) {
@@ -77,7 +77,7 @@ export const updateProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({ success: false, error: "Product not found" });
+      return res.status(404).json({ success: false, error: "Alaab Lama helin" });
     }
 
     // Handle new image upload
@@ -107,7 +107,7 @@ export const updateProduct = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Product updated successfully",
+      message: "Alaabta si guul leh ayaa la cusbooneysiiyay",
       product: updatedProduct,
     });
   } catch (error) {
@@ -121,7 +121,7 @@ export const deleteProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({ success: false, error: "Product not found" });
+      return res.status(404).json({ success: false, error: "Alaab Lama helin" });
     }
 
     if (product.image) {
@@ -133,7 +133,7 @@ export const deleteProduct = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Product deleted successfully",
+      message: "ALaabta si guul leh ayaa la tirtiray",
       deletedProduct: product,
     });
   } catch (error) {
@@ -146,7 +146,7 @@ export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate("category", "name");
     if (!product) {
-      return res.status(404).json({ success: false, error: "Product not found" });
+      return res.status(404).json({ success: false, error: "Alaab Lama helin" });
     }
     res.status(200).json({ success: true, product });
   } catch (error) {

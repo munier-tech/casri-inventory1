@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, List, Edit, Trash2, X, Check, ImageIcon, Upload } from "lucide-react";
+import { Plus, List, Edit, Trash2, X, Upload } from "lucide-react";
 import useCategoryStore from "../../store/useCategoryStore";
 
 const Categories = ({ language = "so" }) => {
@@ -99,6 +99,13 @@ const Categories = ({ language = "so" }) => {
     setEditFormData({ name: "", description: "" });
     setEditImage(null);
     setEditImagePreview(null);
+  };
+
+  const cancelCreating = () => {
+    setIsCreating(false);
+    setFormData({ name: "", description: "" });
+    setFormImage(null);
+    setFormImagePreview(null);
   };
 
   const handleDelete = async (id) => {
@@ -274,6 +281,87 @@ const Categories = ({ language = "so" }) => {
                 </div>
               )}
 
+              {/* Create Modal */}
+              <AnimatePresence>
+                {isCreating && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                  >
+                    <motion.div
+                      initial={{ scale: 0.8 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0.8 }}
+                      className="bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-700"
+                    >
+                      <h3 className="text-xl font-bold text-white mb-4">{content[language].createTitle}</h3>
+                      <form onSubmit={handleCreateSubmit} className="space-y-4">
+                        <div>
+                          <label className="block text-gray-300 mb-1">{content[language].nameLabel}</label>
+                          <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleCreateChange}
+                            className="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 text-white"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-gray-300 mb-1">{content[language].descriptionLabel}</label>
+                          <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleCreateChange}
+                            className="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-gray-300 mb-1">{content[language].imageLabel}</label>
+                          {formImagePreview && (
+                            <img src={formImagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-xl mb-2" />
+                          )}
+                          <div className="relative">
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={handleCreateImageChange} 
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              id="create-image-upload"
+                            />
+                            <label 
+                              htmlFor="create-image-upload" 
+                              className="flex items-center justify-center p-3 bg-gray-700 border border-gray-600 rounded-xl cursor-pointer hover:bg-gray-600 transition-colors"
+                            >
+                              <Upload className="h-5 w-5 mr-2" />
+                              {formImagePreview ? content[language].changeImage : content[language].uploadImage}
+                            </label>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={cancelCreating}
+                            className="px-4 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-white"
+                          >
+                            {content[language].cancel}
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white"
+                          >
+                            {content[language].save}
+                          </button>
+                        </div>
+                      </form>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Edit Modal */}
               <AnimatePresence>
                 {editingId && (
@@ -281,7 +369,7 @@ const Categories = ({ language = "so" }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
                   >
                     <motion.div
                       initial={{ scale: 0.8 }}
@@ -316,7 +404,22 @@ const Categories = ({ language = "so" }) => {
                           {editImagePreview && (
                             <img src={editImagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-xl mb-2" />
                           )}
-                          <input type="file" accept="image/*" onChange={handleEditImageChange} />
+                          <div className="relative">
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={handleEditImageChange} 
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              id="edit-image-upload"
+                            />
+                            <label 
+                              htmlFor="edit-image-upload" 
+                              className="flex items-center justify-center p-3 bg-gray-700 border border-gray-600 rounded-xl cursor-pointer hover:bg-gray-600 transition-colors"
+                            >
+                              <Upload className="h-5 w-5 mr-2" />
+                              {editImagePreview ? content[language].changeImage : content[language].uploadImage}
+                            </label>
+                          </div>
                         </div>
 
                         <div className="flex justify-end gap-2">

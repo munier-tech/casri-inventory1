@@ -16,6 +16,7 @@ import categoryRouter from "./Routes/categoryRoute.js";
 import SalesRouter from "./Routes/salesRoute.js";
 import uploadRouter from "./Routes/uploadRoute.js";
 import loanRouter from "./Routes/loanRoute.js";
+import reportRouter from "./Routes/ReportsRoute.js";
 import { connectdb } from "./lib/connectDB.js";
 
 dotenv.config();
@@ -91,6 +92,7 @@ app.use("/api/liability", liabilityRouter);
 app.use("/api/financial", financialRouter);
 app.use("/api/sales", SalesRouter);
 app.use("/api/loans", loanRouter);
+app.use("/api/reports", reportRouter);
 
 // Only start HTTP server locally (Vercel sets VERCEL=1)
 if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {

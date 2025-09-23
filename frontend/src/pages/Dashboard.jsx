@@ -13,7 +13,9 @@ import {
   FileScanIcon,
   User,
   ChevronRight,
-  Globe
+  Globe,
+  DollarSign,
+  ReceiptIcon
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import useProductsStore from "../store/useProductsStore";
@@ -40,6 +42,8 @@ const Dashboard = () => {
         dashboard: "Dashboard",
         products: "Alaabta",
         stock: "Kaydka",
+        loans: "Amaahda",
+        reports: "Warbixinno",
         categories: "Qeybta Alaabta",
         sales: "Iibka",
         users: "Isticmaalayaasha",
@@ -47,8 +51,11 @@ const Dashboard = () => {
       },
       subtabs: {
         createProduct: "Abuur Alaab",
+        GetReports: "Hel Warbixinno Bile",
         stock: "Hel Kaydka",
+        GetYearlyReports: "Hel Warbixinno Sannadeed",
         createCategory: "Abuur Qayb Cusub",
+        loan: "Abuur Amaah",
         productList: "Liiska Alaabta",
         dailySales: "Iibka Maanta",
         salesByDate: "Iibka Taariikhda",
@@ -69,17 +76,22 @@ const Dashboard = () => {
       dashboard: "Dashboard",
       tabs: {
         dashboard: "Dashboard",
+        loans: "Loans",
         products: "Products",
         stock: "Stock",
         categories: "Categories",
+        reports: "Reports",
         sales: "Sales",
         users: "Users",
         financial: "Financial"
       },
       subtabs: {
         createProduct: "Create Product",
+        loan: "Create Loan",
         stock: "View Stock",
         createCategory: "Create Category",
+        GetReports: "Get Reports",
+        GetYearlyReports: "Get Yearly Reports",
         productList: "Product List",
         dailySales: "Daily Sales",
         salesByDate: "Sales by Date",
@@ -128,6 +140,23 @@ const Dashboard = () => {
       icon: ShoppingBasket,
       subtabs: [
         { id: "create", label: content[language].subtabs.createCategory, icon: PlusCircle, path: "/categories" },
+      ]
+    },
+    { 
+      id: "reports", 
+      label: content[language].tabs.reports, 
+      icon: ReceiptIcon,
+      subtabs: [
+        { id: "get", label: content[language].subtabs.GetReports, icon: PlusCircle, path: "/reports" },
+        { id: "get", label: content[language].subtabs.GetYearlyReports, icon: PlusCircle, path: "/yearlyreports" },
+      ]
+    },
+    { 
+      id: "loans", 
+      label: content[language].tabs.loans, 
+      icon: DollarSign,
+      subtabs: [
+        { id: "create", label: content[language].subtabs.loan, icon: PlusCircle, path: "/loans" },
       ]
     },
     { 

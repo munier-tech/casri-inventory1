@@ -61,6 +61,52 @@ export const getSales = async (req, res) => {
   }
 };
 
+export const createSalesByDate = async (req, res) => {
+  try {
+    const { productId, quantity, sellingCost, saleDate } = req.body;
+
+    if (!productId || !quantity || !sellingCost) {
+      return res.status(400).json({
+        error: "Product, quantity, and selling cost are required",
+      });
+    }
+
+    // ✅ Find product
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    // ✅ Calculate totals
+    const totalAmount = sellingCost * quantity;
+
+    // ✅ Use user-specified date or default to today
+    const dateToSave = saleDate
+      ? dayjs(saleDate).startOf("day").toDate() // normalize to that day
+      : new Date();
+
+    // ✅ Create sale
+    const sale = new Sale({
+      product: productId,
+      quantity,
+      sellingCost,
+      totalAmount,
+      user: req.user?._id,
+      createdAt: dateToSave, // 👈 important: set createdAt to that day
+    });
+
+    await sale.save();
+
+    res.status(201).json({
+      message: "Sale recorded successfully",
+      data: sale,
+    });
+  } catch (error) {
+    console.error("Error creating sale by date:", error);
+    res.status(500).json({ error: "Server error while creating sale" });
+  }
+};
+
 // Get Sale by ID
 export const getSaleById = async (req, res) => {
   try {

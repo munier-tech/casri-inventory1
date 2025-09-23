@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-
 import { 
-  FiShoppingCart, FiPlus, FiMinus, FiX, FiRefreshCw, FiSearch, FiArrowLeft 
+  FiShoppingCart, FiPlus, FiMinus, FiX, FiRefreshCw, FiSearch, FiArrowLeft, 
+  FiCalendar, FiClock
 } from "react-icons/fi";
 import { AlertTriangle, XCircle, Zap } from "lucide-react";
 import useProductsStore from "../store/useProductsStore";
@@ -13,7 +13,7 @@ import useSalesStore from "../store/UseSalesStore";
 const CreateSale = () => {
   const { products = [], fetchProducts } = useProductsStore();
   const { categories = [], fetchCategories } = useCategoryStore();
-  const { createSale } = useSalesStore();
+  const { createSale, createSaleByDate, dailySales, fetchDailySales } = useSalesStore();
 
   const [selectedCategory, setSelectedCategory] = useState("");
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -24,6 +24,8 @@ const CreateSale = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
   const [view, setView] = useState("categories"); // 'categories' or 'products'
+  const [activeTab, setActiveTab] = useState("today"); // 'today' or 'date'
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
 
   const categoryColors = [
     "from-purple-600 to-blue-500",
@@ -39,7 +41,8 @@ const CreateSale = () => {
   useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, [fetchProducts, fetchCategories]);
+    fetchDailySales();
+  }, [fetchProducts, fetchCategories, fetchDailySales]);
 
   useEffect(() => {
     if (selectedCategory) {
@@ -69,17 +72,28 @@ const CreateSale = () => {
   const handleSubmit = async () => {
     if (!selectedProduct) return toast.error("Fadlan dooro alaab");
     if (quantity < 1) return toast.error("Tirada waa inay ka weyn tahay 0");
-    if (quantity > selectedProduct.stock) return toast.error("Tirada weyn tahay kaydka lahayn");
+    if (quantity > selectedProduct.stock) return toast.error("Tirada alaabta  way ka dhamaatay kaydka");
 
     setIsSubmitting(true);
     try {
-      await createSale({
-        productId: selectedProduct._id,
-        quantity,
-        sellingCost,
-      });
+      if (activeTab === "today") {
+        await createSale({
+          productId: selectedProduct._id,
+          quantity,
+          sellingCost,
+        });
+      } else {
+        await createSaleByDate({
+          productId: selectedProduct._id,
+          quantity,
+          sellingCost,
+          saleDate,
+        });
+      }
+      
       toast.success("Iibka si guul leh ayaa loo abuuray");
       await fetchProducts();
+      await fetchDailySales();
       setSelectedProduct(null);
       setQuantity(1);
       setSellingCost(0);
@@ -119,6 +133,7 @@ const CreateSale = () => {
   const refreshProducts = async () => {
     try {
       await fetchProducts();
+      await fetchDailySales();
       toast.success("Alaabta si guul leh ayaa loo cusboonaysiiyay");
     } catch (error) {
       toast.error("Khalad ayaa dhacay marka la cusboonaysiinayo alaabta");
@@ -318,6 +333,26 @@ const CreateSale = () => {
     );
   };
 
+  const renderDateSelector = () => (
+    <div className="mb-6 bg-gray-800 p-4 rounded-xl border border-gray-700">
+      <label className="block text-gray-300 mb-2 font-medium">
+        <FiCalendar className="inline mr-2" />
+        Taariikhda Iibka
+      </label>
+      <input
+        type="date"
+        value={saleDate}
+        onChange={(e) => setSaleDate(e.target.value)}
+        className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+      />
+      <p className="text-gray-400 text-sm mt-2">
+        Dooro taariikhda aad rabto inaad iibka ku keydiso
+      </p>
+    </div>
+  );
+
+ 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -351,6 +386,36 @@ const CreateSale = () => {
             Cusboonaysii
           </motion.button>
         </div>
+
+        {/* Tabs */}
+        <div className="flex mb-6 bg-gray-800 rounded-xl p-1 border border-gray-700">
+          <button
+            onClick={() => setActiveTab("today")}
+            className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
+              activeTab === "today"
+                ? "bg-emerald-600 text-white shadow-lg"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            <FiClock className="inline mr-2" />
+            Iibka Maanta
+          </button>
+          <button
+            onClick={() => setActiveTab("date")}
+            className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
+              activeTab === "date"
+                ? "bg-blue-600 text-white shadow-lg"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            <FiCalendar className="inline mr-2" />
+            Iibka Taariikhda
+          </button>
+        </div>
+
+        {/* Date Selector for Date Tab */}
+        {activeTab === "date" && renderDateSelector()}
+
 
         {view === "categories" ? renderCategoriesView() : renderProductsView()}
 
