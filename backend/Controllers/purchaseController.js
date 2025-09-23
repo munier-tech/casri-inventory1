@@ -1,6 +1,6 @@
 // controllers/purchaseController.js
 import dayjs from "dayjs";
-import Purchase from "../models/PurchaseModel.js";
+import Purchase from "../models/purchaseModel.js";
 
 /**
  * Create a new purchase record

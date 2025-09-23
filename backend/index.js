@@ -16,6 +16,7 @@ import categoryRouter from "./Routes/categoryRoute.js";
 import SalesRouter from "./Routes/salesRoute.js";
 import uploadRouter from "./Routes/uploadRoute.js";
 import loanRouter from "./Routes/loanRoute.js";
+import purchaseRouter from "./Routes/purchaseRoute.js";
 import reportRouter from "./Routes/ReportsRoute.js";
 import { connectdb } from "./lib/connectDB.js";
 
@@ -92,6 +93,7 @@ app.use("/api/liability", liabilityRouter);
 app.use("/api/financial", financialRouter);
 app.use("/api/sales", SalesRouter);
 app.use("/api/loans", loanRouter);
+app.use("/api/purchases", purchaseRouter);
 app.use("/api/reports", reportRouter);
 
 // Only start HTTP server locally (Vercel sets VERCEL=1)

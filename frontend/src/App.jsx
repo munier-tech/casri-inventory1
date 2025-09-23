@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
-import { Loader, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Navbar from './components/Navbar';
-import Homepage from './pages/Homepage';
 import SignUp from './pages/auth/SignUp';
 import SignIn from './pages/auth/SignIn';
 import { useUserStore } from './store/useUserStore';
@@ -23,6 +22,7 @@ import Stock from './components/Admin/Stock';
 import useProductsStore from './store/useProductsStore';
 import GetMonthlyReport from './components/reports/getMonthlyReports';
 import GetYearlyReport from './components/reports/getYearlyReports';
+import PurchaseManager from './components/purchases/Purchase';
 
 const App = () => {
   const { checkAuth, user, isLoading, authChecked } = useUserStore();
@@ -88,6 +88,7 @@ const App = () => {
           <Route path="/createProduct" element={user?.role === "admin" ? <CreateProduct /> : <Navigate to="/" />} />
           <Route path="/reports" element={user?.role === "admin" ? <GetMonthlyReport /> : <Navigate to="/" />} />
           <Route path="/yearlyreports" element={user?.role === "admin" ? <GetYearlyReport /> : <Navigate to="/" />} />
+          <Route path="/purchases" element={user?.role === "admin" ? <PurchaseManager /> : <Navigate to="/" />} />
           <Route path="/products" element={user?.role === "admin" ? <GetProducts /> : <Navigate to="/" />} />
           <Route path="/DailySales" element={user?.role === "admin" ? <DailySales /> : <Navigate to="/" />} />
           <Route path="/HistorySalesDate" element={user?.role === "admin" ? <SalesByDate /> : <Navigate to="/" />} />

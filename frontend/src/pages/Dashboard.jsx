@@ -43,6 +43,7 @@ const Dashboard = () => {
         products: "Alaabta",
         stock: "Kaydka",
         loans: "Amaahda",
+        Purchases: "Alaabta Meheradu so iibsatay",
         reports: "Warbixinno",
         categories: "Qeybta Alaabta",
         sales: "Iibka",
@@ -56,6 +57,7 @@ const Dashboard = () => {
         GetYearlyReports: "Hel Warbixinno Sannadeed",
         createCategory: "Abuur Qayb Cusub",
         loan: "Abuur Amaah",
+        CreatePurchases: "Diiwaangeli Iibsasho",
         productList: "Liiska Alaabta",
         dailySales: "Iibka Maanta",
         salesByDate: "Iibka Taariikhda",
@@ -81,6 +83,7 @@ const Dashboard = () => {
         stock: "Stock",
         categories: "Categories",
         reports: "Reports",
+        Purchases: "Purchases",
         sales: "Sales",
         users: "Users",
         financial: "Financial"
@@ -89,6 +92,7 @@ const Dashboard = () => {
         createProduct: "Create Product",
         loan: "Create Loan",
         stock: "View Stock",
+        CreatePurchases: "Create Purchase",
         createCategory: "Create Category",
         GetReports: "Get Reports",
         GetYearlyReports: "Get Yearly Reports",
@@ -140,6 +144,14 @@ const Dashboard = () => {
       icon: ShoppingBasket,
       subtabs: [
         { id: "create", label: content[language].subtabs.createCategory, icon: PlusCircle, path: "/categories" },
+      ]
+    },
+    { 
+      id: "Purchases", 
+      label: content[language].tabs.Purchases, 
+      icon: ShoppingBasket,
+      subtabs: [
+        { id: "create", label: content[language].subtabs.CreatePurchases, icon: PlusCircle, path: "/purchases" },
       ]
     },
     { 
