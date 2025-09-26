@@ -278,23 +278,23 @@ const LoanManagement = ({ language = "so" }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-700"
+          className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200"
         >
           {/* Header */}
-          <div className="px-6 py-5 border-b border-gray-700 flex items-center justify-between">
+          <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center">
-              <div className="bg-emerald-900/20 p-3 rounded-lg mr-4">
-                <DollarSign className="h-6 w-6 text-emerald-400" />
+              <div className="bg-emerald-100 p-3 rounded-lg mr-4">
+                <DollarSign className="h-6 w-6 text-emerald-600" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">{content[language].title}</h2>
-                <p className="text-gray-400">{content[language].subtitle}</p>
+                <h2 className="text-2xl font-bold text-gray-900">{content[language].title}</h2>
+                <p className="text-gray-600">{content[language].subtitle}</p>
               </div>
             </div>
             <div className="flex space-x-3">
@@ -302,7 +302,7 @@ const LoanManagement = ({ language = "so" }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white font-medium"
+                className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 font-medium"
               >
                 <Filter className="w-5 h-5 mr-2" />
                 {content[language].filterButton}
@@ -321,47 +321,47 @@ const LoanManagement = ({ language = "so" }) => {
 
           {/* Error Display */}
           {error && (
-            <div className="mx-6 mt-6 p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400">
+            <div className="mx-6 mt-6 p-3 bg-red-100 border border-red-200 rounded-lg text-red-700">
               {error}
             </div>
           )}
 
           {/* Statistics Cards */}
-          <div className="p-6 border-b border-gray-700">
+          <div className="p-6 border-b border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-gray-700 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm">{content[language].totalLoans}</p>
-                    <p className="text-2xl font-bold text-white">{stats.totalLoans}</p>
-                    <p className="text-gray-400 text-sm">{content[language].totalAmount}</p>
-                    <p className="text-lg font-semibold text-emerald-400">{formatCurrency(stats.totalAmount)}</p>
+                    <p className="text-gray-600 text-sm">{content[language].totalLoans}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalLoans}</p>
+                    <p className="text-gray-600 text-sm">{content[language].totalAmount}</p>
+                    <p className="text-lg font-semibold text-emerald-600">{formatCurrency(stats.totalAmount)}</p>
                   </div>
-                  <DollarSign className="h-8 w-8 text-emerald-400" />
+                  <DollarSign className="h-8 w-8 text-emerald-600" />
                 </div>
               </div>
 
-              <div className="bg-gray-700 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm">{content[language].unpaidLoans}</p>
-                    <p className="text-2xl font-bold text-red-400">{stats.unpaidLoans}</p>
-                    <p className="text-gray-400 text-sm">{content[language].unpaidAmount}</p>
-                    <p className="text-lg font-semibold text-red-400">{formatCurrency(stats.unpaidAmount)}</p>
+                    <p className="text-gray-600 text-sm">{content[language].unpaidLoans}</p>
+                    <p className="text-2xl font-bold text-red-600">{stats.unpaidLoans}</p>
+                    <p className="text-gray-600 text-sm">{content[language].unpaidAmount}</p>
+                    <p className="text-lg font-semibold text-red-600">{formatCurrency(stats.unpaidAmount)}</p>
                   </div>
-                  <XCircle className="h-8 w-8 text-red-400" />
+                  <XCircle className="h-8 w-8 text-red-600" />
                 </div>
               </div>
 
-              <div className="bg-gray-700 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-sm">{content[language].paidLoans}</p>
-                    <p className="text-2xl font-bold text-green-400">{stats.paidLoans}</p>
-                    <p className="text-gray-400 text-sm">{content[language].paidAmount}</p>
-                    <p className="text-lg font-semibold text-green-400">{formatCurrency(stats.paidAmount)}</p>
+                    <p className="text-gray-600 text-sm">{content[language].paidLoans}</p>
+                    <p className="text-2xl font-bold text-green-600">{stats.paidLoans}</p>
+                    <p className="text-gray-600 text-sm">{content[language].paidAmount}</p>
+                    <p className="text-lg font-semibold text-green-600">{formatCurrency(stats.paidAmount)}</p>
                   </div>
-                  <CheckCircle className="h-8 w-8 text-green-400" />
+                  <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
               </div>
             </div>
@@ -374,19 +374,19 @@ const LoanManagement = ({ language = "so" }) => {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="border-b border-gray-700 overflow-hidden"
+                className="border-b border-gray-200 overflow-hidden"
               >
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         {content[language].statusFilter}
                       </label>
                       <select
                         name="isPaid"
                         value={filters.isPaid}
                         onChange={handleFilterChange}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900"
                       >
                         <option value="">{content[language].allStatus}</option>
                         <option value="false">{content[language].unpaid}</option>
@@ -395,7 +395,7 @@ const LoanManagement = ({ language = "so" }) => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         {content[language].searchPerson}
                       </label>
                       <input
@@ -404,12 +404,12 @@ const LoanManagement = ({ language = "so" }) => {
                         value={filters.personName}
                         onChange={handleFilterChange}
                         placeholder={content[language].searchPerson}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         {content[language].dateFromFilter}
                       </label>
                       <input
@@ -417,12 +417,12 @@ const LoanManagement = ({ language = "so" }) => {
                         name="startDate"
                         value={filters.startDate}
                         onChange={handleFilterChange}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         {content[language].dateToFilter}
                       </label>
                       <input
@@ -430,7 +430,7 @@ const LoanManagement = ({ language = "so" }) => {
                         name="endDate"
                         value={filters.endDate}
                         onChange={handleFilterChange}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900"
                       />
                     </div>
                   </div>
@@ -438,7 +438,7 @@ const LoanManagement = ({ language = "so" }) => {
                   <div className="flex justify-end space-x-3 mt-4">
                     <button
                       onClick={clearFilters}
-                      className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-white"
+                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700"
                     >
                       {content[language].clearFilters}
                     </button>
@@ -459,17 +459,17 @@ const LoanManagement = ({ language = "so" }) => {
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
-                <p className="text-gray-400 mt-2">{content[language].loading}</p>
+                <p className="text-gray-600 mt-2">{content[language].loading}</p>
               </div>
             ) : loans.length === 0 ? (
-              <div className="text-center py-8 bg-gray-700 rounded-lg">
-                <DollarSign className="h-12 w-12 text-gray-500 mx-auto mb-3" />
-                <p className="text-gray-400">{content[language].noLoans}</p>
+              <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600">{content[language].noLoans}</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {loans.map((loan) => (
-                  <div key={loan._id} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <div key={loan._id} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                     {editingId === loan._id ? (
                       <form onSubmit={handleEditSubmit} className="space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -479,7 +479,7 @@ const LoanManagement = ({ language = "so" }) => {
                             placeholder={content[language].personNameLabel}
                             value={editFormData.personName}
                             onChange={handleEditChange}
-                            className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white"
+                            className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                             required
                           />
                           <input
@@ -488,7 +488,7 @@ const LoanManagement = ({ language = "so" }) => {
                             placeholder={content[language].productNameLabel}
                             value={editFormData.productName}
                             onChange={handleEditChange}
-                            className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white"
+                            className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                             required
                           />
                           <input
@@ -499,7 +499,7 @@ const LoanManagement = ({ language = "so" }) => {
                             onChange={handleEditChange}
                             step="0.01"
                             min="0"
-                            className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white"
+                            className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                             required
                           />
                           <input
@@ -509,7 +509,7 @@ const LoanManagement = ({ language = "so" }) => {
                             value={editFormData.quantity}
                             onChange={handleEditChange}
                             min="1"
-                            className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white"
+                            className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                           />
                         </div>
                         <textarea
@@ -517,7 +517,7 @@ const LoanManagement = ({ language = "so" }) => {
                           placeholder={content[language].descriptionLabel}
                           value={editFormData.description}
                           onChange={handleEditChange}
-                          className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-white"
+                          className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                           rows="2"
                         />
                         <div className="flex space-x-2">
@@ -536,35 +536,35 @@ const LoanManagement = ({ language = "so" }) => {
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
                             <div className="flex items-center mb-2">
-                              <User className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="text-white font-medium">{loan.personName}</span>
+                              <User className="h-4 w-4 text-gray-500 mr-2" />
+                              <span className="text-gray-900 font-medium">{loan.personName}</span>
                             </div>
                             <div className="flex items-center mb-2">
-                              <Package className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="text-gray-300">{loan.productName}</span>
+                              <Package className="h-4 w-4 text-gray-500 mr-2" />
+                              <span className="text-gray-700">{loan.productName}</span>
                               {loan.quantity > 1 && (
-                                <span className="text-gray-400 ml-2">x{loan.quantity}</span>
+                                <span className="text-gray-500 ml-2">x{loan.quantity}</span>
                               )}
                             </div>
                             <div className="flex items-center">
-                              <DollarSign className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="text-emerald-400 font-semibold">{formatCurrency(loan.amount)}</span>
+                              <DollarSign className="h-4 w-4 text-gray-500 mr-2" />
+                              <span className="text-emerald-600 font-semibold">{formatCurrency(loan.amount)}</span>
                             </div>
                           </div>
 
                           <div>
                             <div className="flex items-center mb-2">
-                              <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="text-gray-300">{formatDate(loan.loanDate)}</span>
+                              <Calendar className="h-4 w-4 text-gray-500 mr-2" />
+                              <span className="text-gray-700">{formatDate(loan.loanDate)}</span>
                             </div>
                             <div className="flex items-center">
                               {loan.isPaid ? (
-                                <div className="flex items-center text-green-400">
+                                <div className="flex items-center text-green-600">
                                   <CheckCircle className="h-4 w-4 mr-2" />
                                   <span>{content[language].paid}</span>
                                 </div>
                               ) : (
-                                <div className="flex items-center text-red-400">
+                                <div className="flex items-center text-red-600">
                                   <XCircle className="h-4 w-4 mr-2" />
                                   <span>{content[language].unpaid}</span>
                                 </div>
@@ -572,15 +572,15 @@ const LoanManagement = ({ language = "so" }) => {
                             </div>
                             {loan.isPaid && loan.paidDate && (
                               <div className="flex items-center mt-1">
-                                <Check className="h-4 w-4 text-gray-400 mr-2" />
-                                <span className="text-gray-400 text-sm">{formatDate(loan.paidDate)}</span>
+                                <Check className="h-4 w-4 text-gray-500 mr-2" />
+                                <span className="text-gray-500 text-sm">{formatDate(loan.paidDate)}</span>
                               </div>
                             )}
                           </div>
 
                           <div>
                             {loan.description && (
-                              <p className="text-gray-400 text-sm mb-2">{loan.description}</p>
+                              <p className="text-gray-600 text-sm mb-2">{loan.description}</p>
                             )}
                             {loan.createdBy && (
                               <p className="text-gray-500 text-xs">
@@ -594,7 +594,7 @@ const LoanManagement = ({ language = "so" }) => {
                           {!loan.isPaid && (
                             <button
                               onClick={() => handleMarkAsPaid(loan._id)}
-                              className="p-2 text-green-400 hover:text-green-300 hover:bg-green-900/20 rounded-lg"
+                              className="p-2 text-green-600 hover:text-green-500 hover:bg-green-50 rounded-lg"
                               title={content[language].markAsPaid}
                             >
                               <CheckCircle className="h-4 w-4" />
@@ -602,14 +602,14 @@ const LoanManagement = ({ language = "so" }) => {
                           )}
                           <button
                             onClick={() => startEditing(loan)}
-                            className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded-lg"
+                            className="p-2 text-blue-600 hover:text-blue-500 hover:bg-blue-50 rounded-lg"
                             title={content[language].edit}
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(loan._id)}
-                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg"
+                            className="p-2 text-red-600 hover:text-red-500 hover:bg-red-50 rounded-lg"
                             title={content[language].delete}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -630,17 +630,17 @@ const LoanManagement = ({ language = "so" }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
                 onClick={() => setIsCreating(false)}
               >
                 <motion.div
                   initial={{ scale: 0.8 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0.8 }}
-                  className="bg-gray-800 rounded-xl p-6 w-full max-w-md"
+                  className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <h3 className="text-xl font-bold text-emerald-400 mb-4">{content[language].createTitle}</h3>
+                  <h3 className="text-xl font-bold text-emerald-600 mb-4">{content[language].createTitle}</h3>
                   <form onSubmit={handleCreateSubmit} className="space-y-3">
                     <input
                       type="text"
@@ -648,7 +648,7 @@ const LoanManagement = ({ language = "so" }) => {
                       placeholder={content[language].personNameLabel}
                       value={formData.personName}
                       onChange={handleCreateChange}
-                      className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                       required
                     />
                     <input
@@ -657,7 +657,7 @@ const LoanManagement = ({ language = "so" }) => {
                       placeholder={content[language].productNameLabel}
                       value={formData.productName}
                       onChange={handleCreateChange}
-                      className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                       required
                     />
                     <input
@@ -668,7 +668,7 @@ const LoanManagement = ({ language = "so" }) => {
                       onChange={handleCreateChange}
                       step="0.01"
                       min="0"
-                      className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                       required
                     />
                     <input
@@ -678,14 +678,14 @@ const LoanManagement = ({ language = "so" }) => {
                       value={formData.quantity}
                       onChange={handleCreateChange}
                       min="1"
-                      className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                     />
                     <textarea
                       name="description"
                       placeholder={content[language].descriptionLabel}
                       value={formData.description}
                       onChange={handleCreateChange}
-                      className="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white"
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                       rows="2"
                     />
                     <div className="flex justify-end space-x-2 mt-3">
