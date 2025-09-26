@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiEdit2, FiTrash2, FiCheck, FiX, FiPlus, FiImage } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiCheck, FiX, FiPlus, FiImage, FiDollarSign, FiSearch } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import useProductsStore from "../../store/useProductsStore";
@@ -19,11 +19,27 @@ const GetProducts = () => {
     image: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, [fetchProducts, fetchCategories]);
+
+  // Filter products based on search term
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Calculate totals based on ALL products (not filtered)
+  const totalInventoryValue = products.reduce((total, product) => {
+    return total + (parseFloat(product.cost) || 0) * (parseInt(product.stock) || 0);
+  }, 0);
+
+  const totalProducts = products.length;
+  const lowStockItems = products.filter(product => 
+    product.stock < (product.lowStockThreshold || 5)
+  ).length;
 
   const handleDelete = async (id) => {
     if (window.confirm("Ma hubtaa inaad rabto inaad tirtirto alaabtan?")) {
@@ -100,6 +116,14 @@ const GetProducts = () => {
     save: "Kaydi",
     cancel: "Jooji",
     addProduct: "Ku dar Alaab",
+    totalValue: "Qiimaha Wadarta",
+    totalProducts: "Wadarta Alaabta",
+    lowStock: "Alaabta Yar",
+    searchPlaceholder: "Raadi Alaabtad Rabto magaceeda...",
+    searchResults: "alaabood oo la helay",
+    showingResults: "Waxa la muujinayaa",
+    of: "oo ka mid ah",
+    clearSearch: "Nadiifinta raadinta",
   };
 
   return (
@@ -135,6 +159,109 @@ const GetProducts = () => {
             </div>
           </div>
 
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-blue-100">
+            {/* Total Inventory Value */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-xl p-6 shadow-lg border border-blue-100"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">{content.totalValue}</p>
+                  <p className="text-2xl font-bold text-gray-800 mt-1">
+                    ${totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <FiDollarSign className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Total Products */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-xl p-6 shadow-lg border border-blue-100"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">{content.totalProducts}</p>
+                  <p className="text-2xl font-bold text-gray-800 mt-1">{totalProducts}</p>
+                </div>
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <FiPlus className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Low Stock Items */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-xl p-6 shadow-lg border border-blue-100"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">{content.lowStock}</p>
+                  <p className="text-2xl font-bold text-gray-800 mt-1">{lowStockItems}</p>
+                  <p className="text-xs text-red-500 mt-1">Alaabta u dhow inay Dhamaato</p>
+                </div>
+                <div className="p-3 bg-red-100 rounded-lg">
+                  <FiImage className="w-6 h-6 text-red-600" />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Search Section - Made more prominent */}
+          <div className="p-6 bg-white border-b border-gray-200">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Raadi Alaabta</h3>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="relative flex-1 max-w-lg">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiSearch className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={content.searchPlaceholder}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl bg-white placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:shadow-lg transition-all duration-200 text-lg"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center hover:bg-gray-100 rounded-full p-1"
+                      title={content.clearSearch}
+                    >
+                      <FiX className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Search Results Info */}
+                {searchTerm && (
+                  <div className="flex items-center gap-2 text-sm bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                    <span className="font-medium text-blue-700">{content.showingResults}</span>
+                    <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      {filteredProducts.length}
+                    </span>
+                    <span className="text-blue-600">{content.of}</span>
+                    <span className="font-medium text-blue-700">{products.length}</span>
+                    <span className="text-blue-600">{content.searchResults}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Products Table */}
           <div className="p-6 overflow-x-auto">
             <table className="w-full min-w-[800px] rounded-lg overflow-hidden">
@@ -151,8 +278,8 @@ const GetProducts = () => {
                 </tr>
               </thead>
               <tbody>
-                {products && products.length > 0 ? (
-                  products.map((product, index) => (
+                {filteredProducts && filteredProducts.length > 0 ? (
+                  filteredProducts.map((product, index) => (
                     <motion.tr
                       key={product._id}
                       className={`border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 ${
@@ -208,7 +335,14 @@ const GetProducts = () => {
                             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
-                          <span className="font-medium text-gray-800">{product.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-800">{product.name}</span>
+                            {searchTerm && (
+                              <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded border border-yellow-200">
+                                La helay
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
 
@@ -323,9 +457,27 @@ const GetProducts = () => {
                   <tr>
                     <td colSpan={content.tableHeaders.length} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center text-gray-500">
-                        <FiImage className="w-16 h-16 mb-4 text-gray-300" />
-                        <p className="text-lg font-medium">{content.noProducts}</p>
-                        <p className="text-sm text-gray-400 mt-1">Ku dar alaab cusub si aad u bilowdo</p>
+                        {searchTerm ? (
+                          <>
+                            <FiSearch className="w-16 h-16 mb-4 text-gray-300" />
+                            <p className="text-lg font-medium">Lama helin alaab la raadiyay</p>
+                            <p className="text-sm text-gray-400 mt-1">
+                              Ma jiraan alaabo magac ku jira "{searchTerm}"
+                            </p>
+                            <button
+                              onClick={() => setSearchTerm("")}
+                              className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                            >
+                              Daawo dhammaan alaabta
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <FiImage className="w-16 h-16 mb-4 text-gray-300" />
+                            <p className="text-lg font-medium">{content.noProducts}</p>
+                            <p className="text-sm text-gray-400 mt-1">Ku dar alaab cusub si aad u bilowdo</p>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
