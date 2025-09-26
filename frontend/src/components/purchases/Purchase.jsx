@@ -82,7 +82,7 @@ const PurchaseManager = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Maamulka Iibka Casri Electronics</h1>
-          <p className="text-gray-600">Maamul  alaabta Meheradu soo iibsatey iyo kaydka</p>
+          <p className="text-gray-600">Maamul  alaabta Meheradu soo Daymaysatey iyo kaydka</p>
         </div>
 
         {/* Stats Cards */}
@@ -95,7 +95,7 @@ const PurchaseManager = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Wadarta ALaabta Meherada So Ibsatey</p>
+                <p className="text-sm font-medium text-gray-600">Wadarta ALaabta Meherada So daymaysatey</p>
                 <p className="text-2xl font-bold text-gray-900">{filteredPurchases.length}</p>
               </div>
             </div>
@@ -177,7 +177,7 @@ const PurchaseManager = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Magaca Laga Soo iibsadey
+                    Magaca Laga Soo daymaystey
                   </label>
                   <input
                     type="text"
@@ -269,7 +269,7 @@ const PurchaseManager = () => {
           {/* List Section */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-3 sm:space-y-0">
-              <h2 className="text-xl font-bold text-gray-800">Liiska iibka Meherada</h2>
+              <h2 className="text-xl font-bold text-gray-800">Liiska Deymaha Meherada</h2>
               
               <div className="relative w-full sm:w-64">
                 <input
@@ -290,9 +290,9 @@ const PurchaseManager = () => {
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
-                <p className="text-gray-500 text-lg">Ma jiro iib la heli karo</p>
+                <p className="text-gray-500 text-lg">Ma jiro Dayn la heli karo</p>
                 {searchTerm && (
-                  <p className="text-gray-400 text-sm mt-2">Iska day Magac kale</p>
+                  <p className="text-gray-400 text-sm mt-2">Isku day Magac kale</p>
                 )}
               </div>
             ) : (
@@ -314,7 +314,7 @@ const PurchaseManager = () => {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            <span>Iibsade: {purchase.supplierName}</span>
+                            <span>Iibsade "Supplier": {purchase.supplierName}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
