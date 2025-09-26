@@ -174,6 +174,20 @@ const Dashboard = () => {
       ],
     },
     {
+      id: "purchase",
+      label: content[language].tabs.Purchases,
+      icon: ShoppingBasket,
+      color: "text-purple-600",
+      subtabs: [
+        {
+          id: "create",
+          label: content[language].subtabs.createCategory,
+          icon: PlusCircle,
+          path: "/purchases",
+        },
+      ],
+    },
+    {
       id: "sales",
       label: content[language].tabs.sales,
       icon: ShoppingCart,
