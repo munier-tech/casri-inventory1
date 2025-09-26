@@ -65,15 +65,15 @@ const App = () => {
 
   if (isLoading || !authChecked) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-900">
-        <Loader2 className="animate-spin text-white" size={40} />
+      <div className="flex justify-center items-center min-h-screen bg-white">
+        <Loader2 className="animate-spin text-black" size={40} />
       </div>
     );
   }
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute inset-0 z-0 bg-gray-900" />
+      <div className="absolute inset-0 z-0 bg-white" />
       <div className="fixed top-0 left-0 w-full z-50">
         <Navbar />
       </div>

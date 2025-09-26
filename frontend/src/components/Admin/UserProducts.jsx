@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import useSalesStore from "../../store/UseSalesStore";
-import { FiUser, FiDollarSign, FiRefreshCw, FiEdit, FiTrash2, FiChevronDown, FiChevronUp, FiPackage, FiUsers } from "react-icons/fi";
+import { FiUser, FiRefreshCw, FiEdit, FiTrash2, FiChevronDown, FiChevronUp, FiPackage, FiUsers } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 
@@ -101,7 +101,7 @@ const GetAllUsersDailySales = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-emerald-300 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white text-emerald-300 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div 

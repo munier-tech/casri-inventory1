@@ -4,9 +4,9 @@ import { AlertTriangle, CheckCircle2, XCircle, PackageSearch } from "lucide-reac
 import useProductsStore from "../../store/useProductsStore";
 
 const tabs = [
-  { key: "soldout", label: "Alaabaha Dhamaaday", icon: XCircle, color: "text-rose-400" },
-  { key: "low", label: "Alaabta sii Dhamaanaya", icon: AlertTriangle, color: "text-yellow-400" },
-  { key: "fine", label: "Alaabta si buuxa u taala", icon: CheckCircle2, color: "text-emerald-400" },
+  { key: "soldout", label: "Alaabaha Dhamaaday", icon: XCircle, color: "text-red-500", bgColor: "bg-red-50", borderColor: "border-red-200" },
+  { key: "low", label: "Alaabta sii Dhamaanaya", icon: AlertTriangle, color: "text-amber-500", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
+  { key: "fine", label: "Alaabta si buuxa u taala", icon: CheckCircle2, color: "text-green-500", bgColor: "bg-green-50", borderColor: "border-green-200" },
 ];
 
 const Stock = () => {
@@ -33,86 +33,168 @@ const Stock = () => {
 
   const listForTab = activeTab === "soldout" ? classified.soldout : activeTab === "low" ? classified.low : classified.fine;
 
+  const activeTabConfig = tabs.find(tab => tab.key === activeTab);
+
   return (
-    <div className="min-h-screen bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-700"
+          className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
         >
-          <div className="px-6 py-5 border-b border-gray-700">
-            <h2 className="text-2xl font-bold text-white">Qolka Kaydka Alaabta</h2>
-            <p className="text-gray-400">Alaabta dhamaatay iyo kuwa u dhow inay dhamaadaan</p>
+          {/* Header with gradient */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Qolka Kaydka Alaabta</h2>
+                <p className="text-blue-100 mt-1">Alaabta dhamaatay iyo kuwa u dhow inay dhamaadaan</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
+                <span className="text-white font-semibold">Total: {products?.length || 0}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="px-6 pt-4">
-            <div className="flex gap-2 flex-wrap">
-              {tabs.map(({ key, label, icon: Icon, color }) => {
+          {/* Tab Navigation */}
+          <div className="px-6 pt-6 pb-4 bg-gray-50 border-b border-gray-100">
+            <div className="flex gap-3 flex-wrap">
+              {tabs.map(({ key, label, icon: Icon, color, bgColor, borderColor }) => {
                 const count = key === "soldout" ? classified.soldout.length : key === "low" ? classified.low.length : classified.fine.length;
+                const isActive = activeTab === key;
+                
                 return (
-                  <button
+                  <motion.button
                     key={key}
                     onClick={() => setActiveTab(key)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                      activeTab === key ? "bg-gray-700 border-gray-600" : "bg-gray-800 border-gray-700 hover:bg-gray-700"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`flex items-center gap-3 px-5 py-3 rounded-xl border-2 transition-all duration-200 ${
+                      isActive 
+                        ? `${bgColor} ${borderColor} shadow-md border-2` 
+                        : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm"
                     }`}
                   >
-                    <Icon className={color} size={18} />
-                    <span className="text-white">{label}</span>
-                    <span className="ml-2 text-xs text-gray-300 bg-gray-700 px-2 py-0.5 rounded-full">{count}</span>
-                  </button>
+                    <Icon className={`${color} ${isActive ? 'scale-110' : ''} transition-transform`} size={20} />
+                    <span className={`font-medium ${isActive ? 'text-gray-800' : 'text-gray-600'}`}>{label}</span>
+                    <span className={`ml-2 text-sm font-semibold px-2 py-1 rounded-full ${
+                      isActive ? 'bg-white text-gray-800' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {count}
+                    </span>
+                  </motion.button>
                 );
               })}
             </div>
           </div>
 
-          <div className="p-6 overflow-x-auto">
-            {loading ? (
-              <div className="text-center text-gray-300">...</div>
-            ) : listForTab.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <PackageSearch className="mb-3" />
-                <span>Wax alaab ah majiraan qaybtan</span>
+          {/* Active Tab Indicator */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+            <div className="px-6 py-3">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <activeTabConfig.icon className={activeTabConfig.color} size={16} />
+                <span>Showing {listForTab.length} products</span>
+                <span className="mx-2">•</span>
+                <span className={`font-medium ${activeTabConfig.color}`}>{activeTabConfig.label}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="p-6 overflow-x-auto bg-white">
+            {loading ? (
+              <div className="flex justify-center items-center py-16">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : listForTab.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center py-16 text-gray-500"
+              >
+                <div className="bg-gray-100 p-6 rounded-full mb-4">
+                  <PackageSearch size={48} className="text-gray-400" />
+                </div>
+                <span className="text-lg font-medium">Wax alaab ah majiraan qaybtan</span>
+                <span className="text-gray-400 mt-1">Alaabta cusub marka lagu daro way ku soo bandhigi doonaan</span>
+              </motion.div>
             ) : (
-              <table className="w-full min-w-[800px]">
-                <thead>
-                  <tr className="bg-gray-700 text-left">
-                    <th className="px-4 py-3 text-emerald-300 font-semibold">Sawir</th>
-                    <th className="px-4 py-3 text-emerald-300 font-semibold">Magac</th>
-                    <th className="px-4 py-3 text-emerald-300 font-semibold">Tirada kuu Taala</th>
-                    <th className="px-4 py-3 text-emerald-300 font-semibold">Qaybta ay tirsantahy</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {listForTab.map((product, index) => (
-                    <motion.tr
-                      key={product._id}
-                      className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-800/50"}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.04 }}
-                    >
-                      <td className="px-4 py-3">
-                        {product.image ? (
-                          <img
-                            src={product.image} // Cloudinary URL used directly
-                            alt={product.name}
-                            className="h-12 w-12 object-cover rounded"
-                          />
-                        ) : (
-                          <span className="text-gray-400">--</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-white">{product.name}</td>
-                      <td className="px-4 py-3 text-gray-300">{product.stock}</td>
-                      <td className="px-4 py-3 text-gray-300">{product.category?.name || "-"}</td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <table className="w-full min-w-[800px]">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                      <th className="px-6 py-4 text-left text-gray-700 font-semibold">Sawir</th>
+                      <th className="px-6 py-4 text-left text-gray-700 font-semibold">Magac</th>
+                      <th className="px-6 py-4 text-left text-gray-700 font-semibold">Tirada kuu Taala</th>
+                      <th className="px-6 py-4 text-left text-gray-700 font-semibold">Qaybta ay tirsantahy</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {listForTab.map((product, index) => (
+                      <motion.tr
+                        key={product._id}
+                        className={`border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150 ${
+                          index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                        }`}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                        whileHover={{ scale: 1.005, backgroundColor: "rgba(249, 250, 251, 0.8)" }}
+                      >
+                        <td className="px-6 py-4">
+                          {product.image ? (
+                            <div className="relative">
+                              <img
+                                src={product.image}
+                                alt={product.name}
+                                className="h-14 w-14 object-cover rounded-lg shadow-sm border border-gray-200"
+                              />
+                              {activeTab === "soldout" && (
+                                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1 rounded-full">0</div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="h-14 w-14 bg-gray-200 rounded-lg flex items-center justify-center">
+                              <span className="text-gray-400 text-sm">--</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <span className="font-medium text-gray-900">{product.name}</span>
+                            {product.sku && (
+                              <span className="block text-sm text-gray-500 mt-1">SKU: {product.sku}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-semibold ${
+                              activeTab === "soldout" ? "text-red-600" : 
+                              activeTab === "low" ? "text-amber-600" : "text-green-600"
+                            }`}>
+                              {product.stock}
+                            </span>
+                            {activeTab === "low" && product.lowStockThreshold && (
+                              <span className="text-xs text-gray-400">/ {product.lowStockThreshold}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+                            {product.category?.name || "-"}
+                          </span>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </motion.div>
             )}
           </div>
         </motion.div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { PlusCircle, Upload, X } from "lucide-react";
+import { PlusCircle, Upload, X, Image as ImageIcon } from "lucide-react";
 import useProductsStore from "../../store/useProductsStore";
 import useCategoryStore from "../../store/useCategoryStore";
 
@@ -55,7 +55,7 @@ const CreateProduct = () => {
     submitData.append("stock", formData.stock);
     submitData.append("lowStockThreshold", formData.lowStockThreshold || 5);
     submitData.append("category", formData.category);
-    if (formData.image) submitData.append("image", formData.image); // Cloudinary will handle this on backend
+    if (formData.image) submitData.append("image", formData.image);
 
     await createProduct(submitData);
 
@@ -75,52 +75,80 @@ const CreateProduct = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-700"
+          className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
         >
           {/* Header */}
-          <div className="px-6 py-5 border-b border-gray-700 flex items-center">
-            <div className="bg-emerald-900/20 p-3 rounded-lg mr-4">
-              <PlusCircle className="h-6 w-6 text-emerald-400" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white">Abuur Alaab Cusub</h2>
-              <p className="text-gray-400">Ku dar alaab cusub bakhaarkaaga</p>
+          <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+            <div className="flex items-center">
+              <div className="bg-white/20 p-3 rounded-xl mr-4 backdrop-blur-sm">
+                <PlusCircle className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Abuur Alaab Cusub</h2>
+                <p className="text-blue-100">Ku dar alaab cusub bakhaarkaaga</p>
+              </div>
             </div>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="px-6 py-6">
+          <form onSubmit={handleSubmit} className="px-8 py-8">
             {error && (
-              <div className="mb-6 p-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 flex items-center"
+              >
+                <div className="bg-red-100 p-2 rounded-lg mr-3">
+                  <X className="h-4 w-4" />
+                </div>
                 {error}
-              </div>
+              </motion.div>
             )}
 
-            <div className="grid grid-cols-1 gap-6 mb-6">
+            <div className="space-y-6">
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Magaca Alaabta</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Magaca Alaabta
+                </label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   placeholder="Geli magaca alaabta"
                 />
               </div>
 
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  FaahFaahin
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                  placeholder="Product description..."
+                />
+              </div>
+
               {/* Price, Cost, Stock */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Qiimaha Hore ee Alaabtu ku Timid ($)</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Qiimaha ALaabtu ku Taagantahy
+                  </label>
                   <input
                     type="number"
                     name="cost"
@@ -129,85 +157,125 @@ const CreateProduct = () => {
                     required
                     min="0"
                     step="0.01"
-                    className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   />
                 </div>
 
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Tirada Kaydka Aad dhigayso</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Tirada kaydka
+                  </label>
                   <input
                     type="number"
                     name="stock"
                     value={formData.stock}
                     onChange={handleChange}
+                    required
                     min="0"
-                    className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   />
                 </div>
               </div>
 
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Qaybta</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  disabled={categoriesLoading}
-                >
-                  <option value="">Dooro qayb</option>
-                  {categories.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+              {/* Category and Low Stock Threshold */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Qaybta
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    disabled={categoriesLoading}
+                  >
+                    <option value="">Dooro qayb</option>
+                    {categories.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Low Stock Alert
+                  </label>
+                  <input
+                    type="number"
+                    name="lowStockThreshold"
+                    value={formData.lowStockThreshold}
+                    onChange={handleChange}
+                    min="1"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Default: 5"
+                  />
+                </div>
               </div>
 
-              {/* Image */}
+              {/* Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Sawirka Alaabta</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Sawirka Alaabta
+                </label>
                 {imagePreview ? (
-                  <div className="relative inline-block">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative inline-block"
+                  >
                     <img
                       src={imagePreview}
                       alt="Preview"
-                      className="h-40 w-40 object-cover rounded-lg border border-gray-600"
+                      className="h-48 w-48 object-cover rounded-xl border-2 border-gray-200 shadow-sm"
                     />
                     <button
                       type="button"
                       onClick={removeImage}
-                      className="absolute -top-2 -right-2 bg-red-600 rounded-full p-1"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"
                     >
                       <X className="h-4 w-4" />
                     </button>
-                  </div>
+                  </motion.div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600/50">
+                  <motion.label
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200"
+                  >
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 mb-3 text-gray-400" />
-                      <p className="mb-2 text-sm text-gray-400">Riix si aad u soo dejisato sawir</p>
+                      <div className="bg-blue-100 p-3 rounded-full mb-3">
+                        <Upload className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <p className="mb-2 text-sm text-gray-600 font-medium">
+                        Riix si aad u soo dejisato sawir
+                      </p>
                       <p className="text-xs text-gray-500">PNG, JPG, JPEG (Ugu Badnaan 5MB)</p>
                     </div>
                     <input type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
-                  </label>
+                  </motion.label>
                 )}
               </div>
             </div>
 
-            {/* Submit */}
-            <div className="flex justify-end">
+            {/* Submit Button */}
+            <div className="flex justify-end mt-8 pt-6 border-t border-gray-100">
               <motion.button
                 type="submit"
                 disabled={loading}
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.02, boxShadow: "0 10px 25px -5px rgba(59, 130, 246, 0.4)" }}
                 whileTap={{ scale: 0.98 }}
-                className="flex items-center px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
               >
                 {loading ? (
-                  <span>Abuurista...</span>
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Abuurista...
+                  </div>
                 ) : (
                   <>
                     <PlusCircle className="w-5 h-5 mr-2" />

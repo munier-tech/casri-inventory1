@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, List, Edit, Trash2, X, Upload } from "lucide-react";
+import { Plus, List, Edit, Trash2, X, Upload, Image as ImageIcon } from "lucide-react";
 import useCategoryStore from "../../store/useCategoryStore";
 
 const Categories = ({ language = "so" }) => {
@@ -16,11 +16,9 @@ const Categories = ({ language = "so" }) => {
 
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
   const [formData, setFormData] = useState({ name: "", description: "" });
   const [formImage, setFormImage] = useState(null);
   const [formImagePreview, setFormImagePreview] = useState(null);
-
   const [editFormData, setEditFormData] = useState({ name: "", description: "" });
   const [editImage, setEditImage] = useState(null);
   const [editImagePreview, setEditImagePreview] = useState(null);
@@ -138,6 +136,8 @@ const Categories = ({ language = "so" }) => {
       error: "Khalad ayaa dhacay",
       changeImage: "Beddel sawirka",
       uploadImage: "Soo rar sawir",
+      existingCategories: "Qaybaha Hadda Jira",
+      manageCategories: "Maamul qaybaha alaabtaaga"
     },
     en: {
       title: "Product Categories",
@@ -156,51 +156,56 @@ const Categories = ({ language = "so" }) => {
       error: "An error occurred",
       changeImage: "Change image",
       uploadImage: "Upload image",
+      existingCategories: "Existing Categories",
+      manageCategories: "Manage your product categories"
     },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-700"
+          className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100"
         >
           {/* Header */}
-          <div className="px-6 py-5 border-b border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center">
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-xl mr-4">
-                <List className="h-6 w-6 text-white" />
+          <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-white to-blue-50">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              <div className="flex items-center">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-2xl mr-4 shadow-lg">
+                  <List className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900">{content[language].title}</h2>
+                  <p className="text-gray-600 text-lg mt-1">
+                    {content[language].manageCategories}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">{content[language].title}</h2>
-                <p className="text-gray-400">
-                  {language === "so"
-                    ? "Maamul qaybaha alaabtaaga"
-                    : "Manage your product categories"}
-                </p>
-              </div>
+              <motion.button
+                whileHover={{ 
+                  scale: 1.05,
+                  boxShadow: "0 10px 25px -5px rgba(59, 130, 246, 0.4)"
+                }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsCreating(true)}
+                className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-2xl text-white font-semibold shadow-lg transition-all duration-200"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                {content[language].createButton}
+              </motion.button>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setIsCreating(true)}
-              className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl text-white font-medium shadow-lg"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              {content[language].createButton}
-            </motion.button>
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-8">
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-red-900/30 border border-red-800 rounded-xl text-red-300 flex items-center"
+                className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 flex items-center shadow-sm"
               >
                 <X className="h-5 w-5 mr-2 flex-shrink-0" />
                 {error}
@@ -208,70 +213,102 @@ const Categories = ({ language = "so" }) => {
             )}
 
             {/* Categories List */}
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4">
-                {language === "so" ? "Qaybaha Hadda Jira" : "Existing Categories"}
-              </h3>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {content[language].existingCategories}
+                </h3>
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  {categories.length} {language === "so" ? "Qayb" : "Categories"}
+                </span>
+              </div>
 
               {loading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mb-3"></div>
-                  <p className="text-gray-400">{content[language].loading}</p>
+                <div className="text-center py-16">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                  <p className="text-gray-600 text-lg">{content[language].loading}</p>
                 </div>
               ) : categories.length === 0 ? (
-                <div className="text-center py-12 bg-gray-700/50 rounded-2xl border border-gray-600">
-                  <List className="h-16 w-16 text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">{content[language].noCategories}</p>
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-16 bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl border-2 border-dashed border-gray-200"
+                >
+                  <div className="bg-white p-4 rounded-2xl shadow-sm inline-block mb-4">
+                    <List className="h-16 w-16 text-gray-400 mx-auto" />
+                  </div>
+                  <p className="text-gray-600 text-xl mb-2">{content[language].noCategories}</p>
+                  <p className="text-gray-500">
+                    {language === "so" 
+                      ? "Bilow abuurista qayb cusub si aad u billowdo"
+                      : "Start by creating a new category to get started"}
+                  </p>
+                </motion.div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {categories.map((category) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {categories.map((category, index) => (
                     <motion.div
                       key={category._id}
-                      className="bg-gradient-to-b from-gray-700/50 to-gray-800 rounded-2xl p-4 border border-gray-600 hover:border-gray-500 transition-all"
-                      whileHover={{ y: -5 }}
-                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="group relative bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-xl transition-all duration-300"
+                      whileHover={{ y: -8 }}
                     >
-                      <div className="flex flex-col md:flex-row gap-4">
-                        {category.imageUrl && (
-                          <div className="flex-shrink-0">
-                            <img
-                              src={category.imageUrl}
-                              alt={category.name}
-                              className="w-24 h-24 object-cover rounded-xl"
-                            />
-                          </div>
-                        )}
+                      {/* Gradient overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      
+                      <div className="relative z-10">
+                        <div className="flex flex-col sm:flex-row gap-4 items-start">
+                          {category.imageUrl ? (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={category.imageUrl}
+                                alt={category.name}
+                                className="w-20 h-20 object-cover rounded-2xl shadow-md border-2 border-white"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center shadow-md border-2 border-white">
+                              <ImageIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
 
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="text-lg font-semibold text-white mb-1">{category.name}</h4>
-                              {category.description && (
-                                <p className="text-gray-400 mb-2">{category.description}</p>
-                              )}
-                              <p className="text-sm text-gray-500">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="text-lg font-bold text-gray-900 truncate">
+                                {category.name}
+                              </h4>
+                              <div className="flex space-x-1 ml-2">
+                                <button
+                                  onClick={() => startEditing(category)}
+                                  className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition-all duration-200"
+                                  title={content[language].edit}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(category._id)}
+                                  className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-xl transition-all duration-200"
+                                  title={content[language].delete}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {category.description && (
+                              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                                {category.description}
+                              </p>
+                            )}
+                            
+                            <div className="flex items-center text-xs text-gray-500">
+                              <span>
                                 {language === "so"
                                   ? `Taariikhda: ${new Date(category.createdAt).toLocaleDateString()}`
                                   : `Created: ${new Date(category.createdAt).toLocaleDateString()}`}
-                              </p>
-                            </div>
-
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => startEditing(category)}
-                                className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded-xl transition-colors"
-                                title={content[language].edit}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(category._id)}
-                                className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-xl transition-colors"
-                                title={content[language].delete}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -280,171 +317,233 @@ const Categories = ({ language = "so" }) => {
                   ))}
                 </div>
               )}
-
-              {/* Create Modal */}
-              <AnimatePresence>
-                {isCreating && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-                  >
-                    <motion.div
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0.8 }}
-                      className="bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-700"
-                    >
-                      <h3 className="text-xl font-bold text-white mb-4">{content[language].createTitle}</h3>
-                      <form onSubmit={handleCreateSubmit} className="space-y-4">
-                        <div>
-                          <label className="block text-gray-300 mb-1">{content[language].nameLabel}</label>
-                          <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleCreateChange}
-                            className="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 text-white"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-gray-300 mb-1">{content[language].descriptionLabel}</label>
-                          <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleCreateChange}
-                            className="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-gray-300 mb-1">{content[language].imageLabel}</label>
-                          {formImagePreview && (
-                            <img src={formImagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-xl mb-2" />
-                          )}
-                          <div className="relative">
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={handleCreateImageChange} 
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                              id="create-image-upload"
-                            />
-                            <label 
-                              htmlFor="create-image-upload" 
-                              className="flex items-center justify-center p-3 bg-gray-700 border border-gray-600 rounded-xl cursor-pointer hover:bg-gray-600 transition-colors"
-                            >
-                              <Upload className="h-5 w-5 mr-2" />
-                              {formImagePreview ? content[language].changeImage : content[language].uploadImage}
-                            </label>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={cancelCreating}
-                            className="px-4 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-white"
-                          >
-                            {content[language].cancel}
-                          </button>
-                          <button
-                            type="submit"
-                            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white"
-                          >
-                            {content[language].save}
-                          </button>
-                        </div>
-                      </form>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Edit Modal */}
-              <AnimatePresence>
-                {editingId && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-                  >
-                    <motion.div
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0.8 }}
-                      className="bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-700"
-                    >
-                      <h3 className="text-xl font-bold text-white mb-4">{content[language].editTitle}</h3>
-                      <form onSubmit={handleEditSubmit} className="space-y-4">
-                        <div>
-                          <label className="block text-gray-300 mb-1">{content[language].nameLabel}</label>
-                          <input
-                            type="text"
-                            name="name"
-                            value={editFormData.name}
-                            onChange={handleEditChange}
-                            className="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 text-white"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-gray-300 mb-1">{content[language].descriptionLabel}</label>
-                          <textarea
-                            name="description"
-                            value={editFormData.description}
-                            onChange={handleEditChange}
-                            className="w-full p-2 rounded-xl bg-gray-700 border border-gray-600 text-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-gray-300 mb-1">{content[language].imageLabel}</label>
-                          {editImagePreview && (
-                            <img src={editImagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-xl mb-2" />
-                          )}
-                          <div className="relative">
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={handleEditImageChange} 
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                              id="edit-image-upload"
-                            />
-                            <label 
-                              htmlFor="edit-image-upload" 
-                              className="flex items-center justify-center p-3 bg-gray-700 border border-gray-600 rounded-xl cursor-pointer hover:bg-gray-600 transition-colors"
-                            >
-                              <Upload className="h-5 w-5 mr-2" />
-                              {editImagePreview ? content[language].changeImage : content[language].uploadImage}
-                            </label>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={cancelEditing}
-                            className="px-4 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-white"
-                          >
-                            {content[language].cancel}
-                          </button>
-                          <button
-                            type="submit"
-                            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white"
-                          >
-                            {content[language].save}
-                          </button>
-                        </div>
-                      </form>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
         </motion.div>
+
+        {/* Create Modal */}
+        <AnimatePresence>
+          {isCreating && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-3xl p-8 max-w-md w-full border border-gray-200 shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900">{content[language].createTitle}</h3>
+                  <button
+                    onClick={cancelCreating}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <form onSubmit={handleCreateSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {content[language].nameLabel}
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleCreateChange}
+                      className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder={language === "so" ? "Geli magaca qaybta" : "Enter category name"}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {content[language].descriptionLabel}
+                    </label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleCreateChange}
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                      placeholder={language === "so" ? "Geli sharaxaad (ikhtiyaari)" : "Enter description (optional)"}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {content[language].imageLabel}
+                    </label>
+                    {formImagePreview ? (
+                      <div className="space-y-3">
+                        <img 
+                          src={formImagePreview} 
+                          alt="Preview" 
+                          className="w-32 h-32 object-cover rounded-2xl border-2 border-gray-200 shadow-sm" 
+                        />
+                        <label className="flex items-center justify-center px-4 py-3 bg-blue-50 text-blue-700 rounded-2xl border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors">
+                          <Upload className="h-4 w-4 mr-2" />
+                          {content[language].changeImage}
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleCreateImageChange} 
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all duration-200">
+                        <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                        <span className="text-gray-600 font-medium">{content[language].uploadImage}</span>
+                        <span className="text-sm text-gray-500 mt-1">PNG, JPG, JPEG</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleCreateImageChange} 
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={cancelCreating}
+                      className="px-6 py-3 rounded-2xl bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors"
+                    >
+                      {content[language].cancel}
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:from-blue-600 hover:to-purple-700 shadow-lg transition-all"
+                    >
+                      {content[language].save}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Modal */}
+        <AnimatePresence>
+          {editingId && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-3xl p-8 max-w-md w-full border border-gray-200 shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900">{content[language].editTitle}</h3>
+                  <button
+                    onClick={cancelEditing}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <form onSubmit={handleEditSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {content[language].nameLabel}
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={editFormData.name}
+                      onChange={handleEditChange}
+                      className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {content[language].descriptionLabel}
+                    </label>
+                    <textarea
+                      name="description"
+                      value={editFormData.description}
+                      onChange={handleEditChange}
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {content[language].imageLabel}
+                    </label>
+                    {editImagePreview ? (
+                      <div className="space-y-3">
+                        <img 
+                          src={editImagePreview} 
+                          alt="Preview" 
+                          className="w-32 h-32 object-cover rounded-2xl border-2 border-gray-200 shadow-sm" 
+                        />
+                        <label className="flex items-center justify-center px-4 py-3 bg-blue-50 text-blue-700 rounded-2xl border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors">
+                          <Upload className="h-4 w-4 mr-2" />
+                          {content[language].changeImage}
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleEditImageChange} 
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all duration-200">
+                        <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                        <span className="text-gray-600 font-medium">{content[language].uploadImage}</span>
+                        <span className="text-sm text-gray-500 mt-1">PNG, JPG, JPEG</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleEditImageChange} 
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={cancelEditing}
+                      className="px-6 py-3 rounded-2xl bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium transition-colors"
+                    >
+                      {content[language].cancel}
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:from-blue-600 hover:to-purple-700 shadow-lg transition-all"
+                    >
+                      {content[language].save}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -3,9 +3,9 @@ import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   FiShoppingCart, FiPlus, FiMinus, FiX, FiRefreshCw, FiSearch, FiArrowLeft, 
-  FiCalendar, FiClock
+  FiCalendar, FiClock, FiDollarSign
 } from "react-icons/fi";
-import { AlertTriangle, XCircle, Zap } from "lucide-react";
+import { AlertTriangle, XCircle, Zap, Package, Tag, BarChart3 } from "lucide-react";
 import useProductsStore from "../store/useProductsStore";
 import useCategoryStore from "../store/useCategoryStore";
 import useSalesStore from "../store/UseSalesStore";
@@ -23,12 +23,12 @@ const CreateSale = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
-  const [view, setView] = useState("categories"); // 'categories' or 'products'
-  const [activeTab, setActiveTab] = useState("today"); // 'today' or 'date'
-  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
+  const [view, setView] = useState("categories");
+  const [activeTab, setActiveTab] = useState("today");
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
 
   const categoryColors = [
-    "from-purple-600 to-blue-500",
+    "from-blue-500 to-purple-500",
     "from-green-500 to-emerald-500",
     "from-orange-500 to-amber-500",
     "from-pink-500 to-rose-500",
@@ -72,7 +72,7 @@ const CreateSale = () => {
   const handleSubmit = async () => {
     if (!selectedProduct) return toast.error("Fadlan dooro alaab");
     if (quantity < 1) return toast.error("Tirada waa inay ka weyn tahay 0");
-    if (quantity > selectedProduct.stock) return toast.error("Tirada alaabta  way ka dhamaatay kaydka");
+    if (quantity > selectedProduct.stock) return toast.error("Tirada alaabta way ka dhamaatay kaydka");
 
     setIsSubmitting(true);
     try {
@@ -105,7 +105,6 @@ const CreateSale = () => {
     }
   };
 
-  // Fixed Cloudinary support
   const getImageUrl = (url) => (url ? url : "/placeholder.png");
 
   const handleCategoryClick = (category) => {
@@ -150,7 +149,7 @@ const CreateSale = () => {
 
   const renderCategoriesView = () => (
     <div>
-      <div className="relative w-full md:w-64 mb-6">
+      <div className="relative w-full md:w-80 mb-8">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <FiSearch className="h-5 w-5 text-gray-400" />
         </div>
@@ -159,20 +158,20 @@ const CreateSale = () => {
           placeholder="Raadi qaybo..."
           value={categorySearchTerm}
           onChange={(e) => setCategorySearchTerm(e.target.value)}
-          className="pl-10 pr-4 py-2 w-full bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          className="pl-10 pr-4 py-3 w-full bg-white border border-gray-200 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
         />
         {categorySearchTerm && (
           <button
             onClick={() => setCategorySearchTerm("")}
             className="absolute inset-y-0 right-0 pr-3 flex items-center"
           >
-            <FiX className="h-4 w-4 text-gray-400 hover:text-white" />
+            <FiX className="h-4 w-4 text-gray-400 hover:text-gray-600" />
           </button>
         )}
       </div>
 
       <motion.div
-        className="mb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}
@@ -183,25 +182,25 @@ const CreateSale = () => {
             return (
               <motion.div
                 key={cat._id}
-                className="relative cursor-pointer rounded-2xl overflow-hidden shadow-xl group"
+                className="relative cursor-pointer rounded-2xl overflow-hidden shadow-lg group bg-white border border-gray-100 hover:border-blue-200 transition-all duration-300"
                 onClick={() => handleCategoryClick(cat)}
                 whileHover={{ scale: 1.03, y: -5 }}
                 whileTap={{ scale: 0.97 }}
               >
-                <div className="relative h-64 w-full overflow-hidden">
+                <div className="relative h-48 w-full overflow-hidden">
                   <img
                     src={getImageUrl(cat.imageUrl)}
                     alt={cat.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-                    <h3 className="text-xl font-bold mb-1">{cat.name}</h3>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+                  <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                    <h3 className="text-lg font-bold mb-1">{cat.name}</h3>
                     <p className="text-sm opacity-90">
                       {productCount} alaab{productCount !== 1 ? 's' : ''}
                     </p>
                   </div>
-                  <div className="absolute top-4 right-4 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute top-3 right-3 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     Guji
                   </div>
                 </div>
@@ -209,9 +208,12 @@ const CreateSale = () => {
             );
           })
         ) : (
-          <p className="text-center text-gray-400 col-span-full">
-            {categorySearchTerm ? `Qaybo lama helin "${categorySearchTerm}"` : "Qaybo lama helin"}
-          </p>
+          <div className="col-span-full text-center py-12 bg-gray-50 rounded-2xl border border-gray-200">
+            <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">
+              {categorySearchTerm ? `Qaybo lama helin "${categorySearchTerm}"` : "Qaybo lama helin"}
+            </p>
+          </div>
         )}
       </motion.div>
     </div>
@@ -225,29 +227,29 @@ const CreateSale = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700"
+        className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
       >
         <div className="flex items-center mb-6">
           <motion.button
             onClick={handleBackToCategories}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center p-2 mr-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+            className="flex items-center justify-center p-2 mr-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
           >
-            <FiArrowLeft className="h-5 w-5" />
+            <FiArrowLeft className="h-5 w-5 text-gray-600" />
           </motion.button>
           <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-300 to-teal-300 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               {currentCategory?.name || "Alaabooyinka"} - Alaabooyinka
             </h2>
-            <p className="text-gray-400">
+            <p className="text-gray-600">
               {filteredProducts.length} alaab ee la helay
               {searchTerm && ` oo ku jira "${searchTerm}"`}
             </p>
           </div>
         </div>
 
-        <div className="relative w-full md:w-64 mb-6">
+        <div className="relative w-full md:w-80 mb-6">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <FiSearch className="h-5 w-5 text-gray-400" />
           </div>
@@ -256,28 +258,28 @@ const CreateSale = () => {
             placeholder="Raadi alaab..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 w-full bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="pl-10 pr-4 py-3 w-full bg-white border border-gray-200 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
               className="absolute inset-y-0 right-0 pr-3 flex items-center"
             >
-              <FiX className="h-4 w-4 text-gray-400 hover:text-white" />
+              <FiX className="h-4 w-4 text-gray-400 hover:text-gray-600" />
             </button>
           )}
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-12 bg-gray-700 rounded-xl">
-            <FiSearch className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
+          <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+            <FiSearch className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">
               {searchTerm ? `Wax alaab ah lagama helin "${searchTerm}"` : "Alaab lagama helin qaybtaan."}
             </p>
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="mt-4 px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-xl text-sm"
+                className="mt-4 px-4 py-2 bg-white border border-gray-300 hover:border-gray-400 rounded-xl text-sm text-gray-600 hover:text-gray-800 transition-colors"
               >
                 Ka saar baaritaanka
               </button>
@@ -288,40 +290,43 @@ const CreateSale = () => {
             {filteredProducts.map((product) => (
               <motion.div
                 key={product._id}
-                className={`bg-gradient-to-b from-gray-800 to-gray-700 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-lg ${
+                className={`bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-lg border border-gray-100 hover:shadow-xl ${
                   selectedProduct?._id === product._id
-                    ? "ring-2 ring-emerald-400 transform scale-105"
-                    : "hover:bg-gray-700 hover:shadow-xl"
+                    ? "ring-2 ring-blue-400 transform scale-105 border-blue-200"
+                    : "hover:border-blue-200"
                 }`}
                 onClick={() => setSelectedProduct(product)}
                 whileHover={{ y: -5 }}
                 layoutId={`product-${product._id}`}
               >
-                <div className="relative h-48 overflow-hidden">
+                <div className="relative h-40 overflow-hidden">
                   <img
                     src={getImageUrl(product.image)}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
-                    <h2 className="text-lg font-semibold text-white truncate">{product.name}</h2>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
+                    <h2 className="text-base font-semibold text-white truncate">{product.name}</h2>
                   </div>
                   {product.stock === 0 && (
-                    <div className="absolute inset-0 bg-red-900/80 flex items-center justify-center flex-col p-4">
+                    <div className="absolute inset-0 bg-red-500/90 flex items-center justify-center flex-col p-4">
                       <XCircle className="h-8 w-8 text-white mb-2" />
-                      <span className="text-white font-bold text-lg text-center">Dhamaatay</span>
+                      <span className="text-white font-bold text-sm text-center">Dhamaatay</span>
                     </div>
                   )}
                 </div>
-                <div className="p-4 flex justify-between items-center">
+                <div className="p-3 flex justify-between items-center">
                   <div>
-                    <p className="text-emerald-300 font-medium mb-1">${product.cost}</p>
-                    <p className="text-gray-400 text-sm">Kaydka: {product.stock}</p>
+                    <p className="text-blue-600 font-bold mb-1 flex items-center">
+                      <FiDollarSign className="h-3 w-3 mr-1" />
+                      {product.cost}
+                    </p>
+                    <p className="text-gray-500 text-xs">Kaydka: {product.stock}</p>
                   </div>
                   {product.stock > 0 && product.stock <= 5 && (
-                    <div className="flex items-center gap-2 bg-amber-900/30 border border-amber-700 rounded-lg px-3 py-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
-                      <p className="text-amber-400 text-xs font-medium">sii Dhamaanaya</p>
+                    <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
+                      <AlertTriangle className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                      <p className="text-amber-600 text-xs font-medium">sii Dhamaanaya</p>
                     </div>
                   )}
                 </div>
@@ -334,27 +339,25 @@ const CreateSale = () => {
   };
 
   const renderDateSelector = () => (
-    <div className="mb-6 bg-gray-800 p-4 rounded-xl border border-gray-700">
-      <label className="block text-gray-300 mb-2 font-medium">
-        <FiCalendar className="inline mr-2" />
+    <div className="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-200">
+      <label className="block text-gray-700 mb-2 font-medium flex items-center">
+        <FiCalendar className="inline mr-2 text-blue-500" />
         Taariikhda Iibka
       </label>
       <input
         type="date"
         value={saleDate}
         onChange={(e) => setSaleDate(e.target.value)}
-        className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+        className="w-full p-3 bg-white border border-gray-300 rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       />
-      <p className="text-gray-400 text-sm mt-2">
+      <p className="text-gray-600 text-sm mt-2">
         Dooro taariikhda aad rabto inaad iibka ku keydiso
       </p>
     </div>
   );
 
- 
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 text-gray-900 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
@@ -364,14 +367,14 @@ const CreateSale = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-3 rounded-xl">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-xl shadow-lg">
               <FiShoppingCart className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Iibi Alaab Cusub
               </h1>
-              <p className="text-gray-400">Dooro qaybta oo iibi alaabta</p>
+              <p className="text-gray-600">Dooro qaybta oo iibi alaabta</p>
             </div>
           </motion.div>
 
@@ -379,7 +382,7 @@ const CreateSale = () => {
             onClick={refreshProducts}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl text-white font-medium shadow-lg"
+            className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl text-white font-medium shadow-lg transition-all duration-300"
             title="Cusboonaysii alaabta"
           >
             <FiRefreshCw className="w-5 h-5 mr-2" />
@@ -387,14 +390,51 @@ const CreateSale = () => {
           </motion.button>
         </div>
 
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Wadarta Alaabta</p>
+                <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-xl">
+                <Package className="h-6 w-6 text-blue-500" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Wadarta Qaybaha</p>
+                <p className="text-2xl font-bold text-gray-900">{categories.length}</p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-xl">
+                <Tag className="h-6 w-6 text-green-500" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm">Iibka Maanta</p>
+                <p className="text-2xl font-bold text-gray-900">{dailySales?.length || 0}</p>
+              </div>
+              <div className="p-3 bg-orange-50 rounded-xl">
+                <BarChart3 className="h-6 w-6 text-orange-500" />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Tabs */}
-        <div className="flex mb-6 bg-gray-800 rounded-xl p-1 border border-gray-700">
+        <div className="flex mb-6 bg-white rounded-xl p-1 border border-gray-200 shadow-sm">
           <button
             onClick={() => setActiveTab("today")}
             className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
               activeTab === "today"
-                ? "bg-emerald-600 text-white shadow-lg"
-                : "text-gray-400 hover:text-white"
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                : "text-gray-600 hover:text-blue-600"
             }`}
           >
             <FiClock className="inline mr-2" />
@@ -404,8 +444,8 @@ const CreateSale = () => {
             onClick={() => setActiveTab("date")}
             className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
               activeTab === "date"
-                ? "bg-blue-600 text-white shadow-lg"
-                : "text-gray-400 hover:text-white"
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                : "text-gray-600 hover:text-blue-600"
             }`}
           >
             <FiCalendar className="inline mr-2" />
@@ -415,7 +455,6 @@ const CreateSale = () => {
 
         {/* Date Selector for Date Tab */}
         {activeTab === "date" && renderDateSelector()}
-
 
         {view === "categories" ? renderCategoriesView() : renderProductsView()}
 
@@ -427,7 +466,7 @@ const CreateSale = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 50 }}
               transition={{ duration: 0.3 }}
-              className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-gray-800 to-gray-900 border-t border-gray-700 p-6 shadow-2xl"
+              className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-6 shadow-2xl"
             >
               <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
@@ -435,7 +474,7 @@ const CreateSale = () => {
                     <img
                       src={getImageUrl(selectedProduct.image)}
                       alt={selectedProduct.name}
-                      className="h-16 w-16 object-cover rounded-xl border-2 border-emerald-400"
+                      className="h-16 w-16 object-cover rounded-xl border-2 border-blue-400"
                     />
                     {selectedProduct.stock <= 5 && (
                       <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full p-1">
@@ -444,52 +483,52 @@ const CreateSale = () => {
                     )}
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">{selectedProduct.name}</h2>
+                    <h2 className="text-xl font-bold text-gray-900">{selectedProduct.name}</h2>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-emerald-300">Qiimaha: $</span>
+                      <span className="text-blue-600 font-medium">Qiimaha: $</span>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={sellingCost}
                         onChange={(e) => setSellingCost(parseFloat(e.target.value) || 0)}
-                        className="w-24 p-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-emerald-500"
+                        className="w-24 p-2 rounded-lg bg-gray-50 border border-gray-300 text-gray-800 focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
-                    <p className="text-gray-400 text-sm mt-1">Kaydka hada: {selectedProduct.stock}</p>
+                    <p className="text-gray-600 text-sm mt-1">Kaydka hada: {selectedProduct.stock}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center bg-gray-700 rounded-xl border border-gray-600">
+                  <div className="flex items-center bg-gray-50 rounded-xl border border-gray-300">
                     <button
                       onClick={decrementQuantity}
                       disabled={quantity <= 1}
-                      className="p-2 text-gray-400 hover:text-white disabled:opacity-30 transition-colors"
+                      className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-30 transition-colors"
                     >
                       <FiMinus />
                     </button>
-                    <span className="px-4 py-2 text-lg font-medium text-white">{quantity}</span>
+                    <span className="px-4 py-2 text-lg font-medium text-gray-900">{quantity}</span>
                     <button
                       onClick={incrementQuantity}
                       disabled={quantity >= selectedProduct.stock}
-                      className="p-2 text-gray-400 hover:text-white disabled:opacity-30 transition-colors"
+                      className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-30 transition-colors"
                     >
                       <FiPlus />
                     </button>
                   </div>
 
                   <div className="text-center min-w-[120px]">
-                    <p className="text-lg font-bold text-emerald-400">
+                    <p className="text-lg font-bold text-blue-600">
                       ${(sellingCost * quantity).toFixed(2)}
                     </p>
-                    <p className="text-xs text-gray-400">Wadarta</p>
+                    <p className="text-xs text-gray-500">Wadarta</p>
                   </div>
 
                   <button
                     onClick={handleSubmit}
                     disabled={isSubmitting || quantity > selectedProduct.stock || quantity < 1}
-                    className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl font-semibold flex items-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl font-semibold text-white flex items-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300"
                   >
                     {isSubmitting ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>

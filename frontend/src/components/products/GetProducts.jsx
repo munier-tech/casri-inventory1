@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiEdit2, FiTrash2, FiCheck, FiX, FiPlus } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiCheck, FiX, FiPlus, FiImage } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import useProductsStore from "../../store/useProductsStore";
@@ -46,7 +46,7 @@ const GetProducts = () => {
       category: product.category?._id || "",
       image: null,
     });
-    setImagePreview(product.image || null); // Cloudinary URL already stored
+    setImagePreview(product.image || null);
   };
 
   const handleImageChange = (e) => {
@@ -67,7 +67,7 @@ const GetProducts = () => {
       formData.append("stock", updatedData.stock);
       formData.append("lowStockThreshold", updatedData.lowStockThreshold);
       formData.append("category", updatedData.category);
-      if (updatedData.image) formData.append("image", updatedData.image); // backend uploads to Cloudinary
+      if (updatedData.image) formData.append("image", updatedData.image);
 
       await updateProduct(id, formData);
       toast.success("Alaabta si guul leh ayaa loo cusboonaysiiyay");
@@ -93,7 +93,7 @@ const GetProducts = () => {
 
   const content = {
     title: "Liiska Alaabta",
-    tableHeaders: ["Sawir", "Magac", "Qiimaha Saxda ah", "Tirada kaydka", "Qaybta", "Ficilada"],
+    tableHeaders: ["Sawir", "Magac", "Qiimaha", "Kaydka", "Qaybta", "Ficilada"],
     noProducts: "Lama helin alaabo",
     edit: "Wax ka beddel",
     delete: "Tirtir",
@@ -103,43 +103,48 @@ const GetProducts = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-700"
+          className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
         >
           {/* Header */}
-          <div className="px-6 py-5 border-b border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center">
-              <div className="bg-emerald-900/20 p-3 rounded-lg mr-4">
-                <FiPlus className="h-6 w-6 text-emerald-400" />
+          <div className="px-8 py-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center">
+                <div className="bg-white/20 p-3 rounded-xl mr-4 backdrop-blur-sm">
+                  <FiPlus className="h-7 w-7 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">{content.title}</h2>
+                  <p className="text-blue-100">Maamulka alaabta</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">{content.title}</h2>
-                <p className="text-gray-400">Maamulka alaabta</p>
-              </div>
+              <motion.button
+                whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -5px rgba(255,255,255,0.3)" }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center px-6 py-3 bg-white text-blue-600 hover:bg-blue-50 rounded-xl font-semibold shadow-lg"
+                onClick={() => (window.location.href = "/createProduct")}
+              >
+                <FiPlus className="w-5 h-5 mr-2" />
+                {content.addProduct}
+              </motion.button>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-medium"
-              onClick={() => (window.location.href = "/createProduct")}
-            >
-              <FiPlus className="w-5 h-5 mr-2" />
-              {content.addProduct}
-            </motion.button>
           </div>
 
           {/* Products Table */}
           <div className="p-6 overflow-x-auto">
-            <table className="w-full min-w-[800px]">
+            <table className="w-full min-w-[800px] rounded-lg overflow-hidden">
               <thead>
-                <tr className="bg-gray-700 text-left">
+                <tr className="bg-gradient-to-r from-blue-50 to-indigo-50">
                   {content.tableHeaders.map((header, index) => (
-                    <th key={index} className="px-4 py-3 text-emerald-300 font-semibold">
+                    <th 
+                      key={index} 
+                      className="px-6 py-4 text-blue-700 font-semibold text-left border-b border-blue-100"
+                    >
                       {header}
                     </th>
                   ))}
@@ -150,89 +155,104 @@ const GetProducts = () => {
                   products.map((product, index) => (
                     <motion.tr
                       key={product._id}
-                      className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-800/50"}`}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
+                      className={`border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                      }`}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
+                      whileHover={{ scale: 1.005 }}
                     >
                       {/* Image */}
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-4">
                         {editingProduct === product._id ? (
-                          <div className="flex flex-col">
-                            <input
-                              type="file"
-                              onChange={handleImageChange}
-                              accept="image/*"
-                              className="mb-2 text-sm text-gray-300"
-                            />
+                          <div className="flex flex-col items-start space-y-2">
+                            <label className="flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors">
+                              <FiImage className="w-4 h-4 mr-2" />
+                              Beddel sawir
+                              <input
+                                type="file"
+                                onChange={handleImageChange}
+                                accept="image/*"
+                                className="hidden"
+                              />
+                            </label>
                             {imagePreview && (
                               <img
                                 src={imagePreview}
                                 alt="preview"
-                                className="h-12 w-12 object-cover rounded mt-2"
+                                className="h-12 w-12 object-cover rounded-lg border-2 border-blue-200 shadow-sm"
                               />
                             )}
                           </div>
                         ) : product.image ? (
                           <img
-                            src={product.image} // Already full Cloudinary URL
+                            src={product.image}
                             alt={product.name}
-                            className="h-12 w-12 object-cover rounded"
+                            className="h-12 w-12 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
                           />
                         ) : (
-                          <span className="text-gray-400">--</span>
+                          <div className="h-12 w-12 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                            <FiImage className="w-5 h-5 text-gray-400" />
+                          </div>
                         )}
                       </td>
 
                       {/* Name */}
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-4">
                         {editingProduct === product._id ? (
                           <input
                             type="text"
                             value={updatedData.name}
                             onChange={(e) => setUpdatedData({ ...updatedData, name: e.target.value })}
-                            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
-                          <span className="text-white">{product.name}</span>
+                          <span className="font-medium text-gray-800">{product.name}</span>
                         )}
                       </td>
 
                       {/* Cost */}
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-4">
                         {editingProduct === product._id ? (
                           <input
                             type="number"
                             value={updatedData.cost}
                             onChange={(e) => setUpdatedData({ ...updatedData, cost: e.target.value })}
-                            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
-                          <span className="text-yellow-400">${product.cost}</span>
+                          <span className="font-semibold text-green-600">${product.cost}</span>
                         )}
                       </td>
 
                       {/* Stock */}
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-4">
                         {editingProduct === product._id ? (
                           <input
                             type="number"
                             value={updatedData.stock}
                             onChange={(e) => setUpdatedData({ ...updatedData, stock: e.target.value })}
-                            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
-                          <span className="text-gray-300">{product.stock}</span>
+                          <span className={`font-medium ${
+                            product.stock < (product.lowStockThreshold || 5) 
+                              ? "text-red-600" 
+                              : "text-gray-700"
+                          }`}>
+                            {product.stock}
+                          </span>
                         )}
                       </td>
 
                       {/* Category */}
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-4">
                         {editingProduct === product._id ? (
                           <select
                             value={updatedData.category}
                             onChange={(e) => setUpdatedData({ ...updatedData, category: e.target.value })}
-                            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           >
                             <option value="">-- Xulo Qaybta --</option>
                             {categories &&
@@ -243,53 +263,55 @@ const GetProducts = () => {
                               ))}
                           </select>
                         ) : (
-                          <span className="text-gray-300">{product.category?.name || "Qayb la'aan"}</span>
+                          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                            {product.category?.name || "Qayb la'aan"}
+                          </span>
                         )}
                       </td>
 
                       {/* Actions */}
-                      <td className="px-4 py-3">
+                      <td className="px-6 py-4">
                         <div className="flex gap-2">
                           {editingProduct === product._id ? (
                             <>
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
+                                whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(34,197,94,0.5)" }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => handleUpdate(product._id)}
-                                className="p-2 bg-emerald-700 hover:bg-emerald-600 rounded-lg text-white"
+                                className="p-2.5 bg-green-500 hover:bg-green-600 rounded-xl text-white shadow-md"
                                 title={content.save}
                               >
-                                <FiCheck />
+                                <FiCheck className="w-4 h-4" />
                               </motion.button>
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
+                                whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(156,163,175,0.5)" }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={handleCancel}
-                                className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white"
+                                className="p-2.5 bg-gray-500 hover:bg-gray-600 rounded-xl text-white shadow-md"
                                 title={content.cancel}
                               >
-                                <FiX />
+                                <FiX className="w-4 h-4" />
                               </motion.button>
                             </>
                           ) : (
                             <>
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
+                                whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(59,130,246,0.5)" }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => handleEdit(product)}
-                                className="p-2 bg-blue-700 hover:bg-blue-600 rounded-lg text-white"
+                                className="p-2.5 bg-blue-500 hover:bg-blue-600 rounded-xl text-white shadow-md"
                                 title={content.edit}
                               >
-                                <FiEdit2 />
+                                <FiEdit2 className="w-4 h-4" />
                               </motion.button>
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
+                                whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(239,68,68,0.5)" }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => handleDelete(product._id)}
-                                className="p-2 bg-red-700 hover:bg-red-600 rounded-lg text-white"
+                                className="p-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-white shadow-md"
                                 title={content.delete}
                               >
-                                <FiTrash2 />
+                                <FiTrash2 className="w-4 h-4" />
                               </motion.button>
                             </>
                           )}
@@ -299,8 +321,12 @@ const GetProducts = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={content.tableHeaders.length} className="px-4 py-8 text-center text-gray-400">
-                      {content.noProducts}
+                    <td colSpan={content.tableHeaders.length} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-500">
+                        <FiImage className="w-16 h-16 mb-4 text-gray-300" />
+                        <p className="text-lg font-medium">{content.noProducts}</p>
+                        <p className="text-sm text-gray-400 mt-1">Ku dar alaab cusub si aad u bilowdo</p>
+                      </div>
                     </td>
                   </tr>
                 )}

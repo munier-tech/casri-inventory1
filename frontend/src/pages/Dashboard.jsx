@@ -9,29 +9,29 @@ import {
   Calendar,
   FileText,
   Receipt,
-  FileTerminalIcon,
   FileScanIcon,
-  User,
   ChevronRight,
   Globe,
-  DollarSign,
-  ReceiptIcon
+  BarChart3,
+  Package,
+  CreditCard,
+  Users,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import useProductsStore from "../store/useProductsStore";
+import { useEffect } from "react";
+import useSalesStore from "../store/UseSalesStore";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [expandedTabs, setExpandedTabs] = useState({});
-  const [language, setLanguage] = useState("so"); // 'so' for Somali, 'en' for English
-  const { products: rawProducts } = useProductsStore();
+  const [language, setLanguage] = useState("so");
 
-  const products = Array.isArray(rawProducts) ? rawProducts : [];
 
   const toggleTabExpansion = (tabId) => {
-    setExpandedTabs(prev => ({
+    setExpandedTabs((prev) => ({
       ...prev,
-      [tabId]: !prev[tabId]
+      [tabId]: !prev[tabId],
     }));
   };
 
@@ -43,12 +43,12 @@ const Dashboard = () => {
         products: "Alaabta",
         stock: "Kaydka",
         loans: "Amaahda",
-        Purchases: "Alaabta Meheradu so iibsatay",
+        Purchases: "Daynta Meheradaha",
         reports: "Warbixinno",
         categories: "Qeybta Alaabta",
         sales: "Iibka",
         users: "Isticmaalayaasha",
-        financial: "Maaliyadda"
+        financial: "Maaliyadda",
       },
       subtabs: {
         createProduct: "Abuur Alaab",
@@ -57,22 +57,24 @@ const Dashboard = () => {
         GetYearlyReports: "Hel Warbixinno Sannadeed",
         createCategory: "Abuur Qayb Cusub",
         loan: "Abuur Amaah",
-        CreatePurchases: "Diiwaangeli Iibsasho",
+        CreatePurchases: "Hel Daynta Meheradaha",
         productList: "Liiska Alaabta",
         dailySales: "Iibka Maanta",
         salesByDate: "Iibka Taariikhda",
         userDailySales: "Iibka Isticmaalaha Maanta",
         userSalesByDate: "Iibka Isticmaalaha Taariikhda",
         financialLog: "Diiwaanka Maaliyadda",
-        financialHistory: "Taariikhda Maaliyadda"
+        financialHistory: "Taariikhda Maaliyadda",
       },
-      welcome: "ku Soo dhawoow Dashboard-ka",
-      welcomeDesc: "Halkan waxaad ka heli kartaa macluumaadka guud ee ganacsigaaga iyo xogta dhaqaale.",
-      selectSubtab: "Dooro qeybta hoose ee aad rabto inaad wax ka qabato.",
+      welcome: "Ku Soo dhawoow Dashboard-ka",
+      welcomeDesc:
+        "Halkan waxaad ka heli kartaa macluumaadka guud ee ganacsigaaga iyo xogta dhaqaale.",
       generalReport: "Warbixinta Guud",
       finance: "Dhaqaale",
       financeDesc: "Halkan waxaad arki kartaa dhaqaalahaga guud",
-      productsDesc: "Maareynta alaabta iyo bakhaarka"
+      productsDesc: "Maareynta alaabta iyo bakhaarka",
+      stats: "Tirakoobka",
+      quickActions: "Ficilada Degdegga ah",
     },
     en: {
       dashboard: "Dashboard",
@@ -86,7 +88,7 @@ const Dashboard = () => {
         Purchases: "Purchases",
         sales: "Sales",
         users: "Users",
-        financial: "Financial"
+        financial: "Financial",
       },
       subtabs: {
         createProduct: "Create Product",
@@ -102,129 +104,182 @@ const Dashboard = () => {
         userDailySales: "User Daily Sales",
         userSalesByDate: "User Sales by Date",
         financialLog: "Financial Log",
-        financialHistory: "Financial History"
+        financialHistory: "Financial History",
       },
       welcome: "Welcome to your Dashboard",
-      welcomeDesc: "Here you can find an overview of your business and financial data.",
-      selectSubtab: "Select a sub-tab to perform operations.",
+      welcomeDesc:
+        "Here you can find an overview of your business and financial data.",
       generalReport: "General Report",
       finance: "Finance",
       financeDesc: "View your overall financial status here",
-      productsDesc: "Manage your products and inventory"
-    }
+      productsDesc: "Manage your products and inventory",
+      stats: "Statistics",
+      quickActions: "Quick Actions",
+    },
   };
 
   const tabs = [
-    { 
-      id: "dashboard", 
-      label: content[language].tabs.dashboard, 
+    {
+      id: "dashboard",
+      label: content[language].tabs.dashboard,
       icon: Home,
-      content: <DashboardContent language={language} content={content[language]} />
+      color: "text-blue-600",
     },
-    { 
-      id: "products", 
-      label: content[language].tabs.products, 
-      icon: ShoppingBasket,
+    {
+      id: "products",
+      label: content[language].tabs.products,
+      icon: Package,
+      color: "text-green-600",
       subtabs: [
-        { id: "create", label: content[language].subtabs.createProduct, icon: PlusCircle, path: "/createProduct" },
-        { id: "list", label: content[language].subtabs.productList, icon: ShoppingBasket, path: "/products" },
-      ]
+        {
+          id: "create",
+          label: content[language].subtabs.createProduct,
+          icon: PlusCircle,
+          path: "/createProduct",
+        },
+        {
+          id: "list",
+          label: content[language].subtabs.productList,
+          icon: ShoppingBasket,
+          path: "/products",
+        },
+      ],
     },
-    { 
-      id: "stock", 
-      label: content[language].tabs.stock, 
+    {
+      id: "stock",
+      label: content[language].tabs.stock,
       icon: Boxes,
+      color: "text-orange-600",
       subtabs: [
-        { id: "get", label: content[language].subtabs.stock, icon: Boxes, path: "/stock" },
-      ]
+        {
+          id: "get",
+          label: content[language].subtabs.stock,
+          icon: Boxes,
+          path: "/stock",
+        },
+      ],
     },
-    { 
-      id: "categories", 
-      label: content[language].tabs.categories, 
+    {
+      id: "categories",
+      label: content[language].tabs.categories,
       icon: ShoppingBasket,
+      color: "text-purple-600",
       subtabs: [
-        { id: "create", label: content[language].subtabs.createCategory, icon: PlusCircle, path: "/categories" },
-      ]
+        {
+          id: "create",
+          label: content[language].subtabs.createCategory,
+          icon: PlusCircle,
+          path: "/categories",
+        },
+      ],
     },
-    { 
-      id: "Purchases", 
-      label: content[language].tabs.Purchases, 
-      icon: ShoppingBasket,
-      subtabs: [
-        { id: "create", label: content[language].subtabs.CreatePurchases, icon: PlusCircle, path: "/purchases" },
-      ]
-    },
-    { 
-      id: "reports", 
-      label: content[language].tabs.reports, 
-      icon: ReceiptIcon,
-      subtabs: [
-        { id: "get", label: content[language].subtabs.GetReports, icon: PlusCircle, path: "/reports" },
-        { id: "get", label: content[language].subtabs.GetYearlyReports, icon: PlusCircle, path: "/yearlyreports" },
-      ]
-    },
-    { 
-      id: "loans", 
-      label: content[language].tabs.loans, 
-      icon: DollarSign,
-      subtabs: [
-        { id: "create", label: content[language].subtabs.loan, icon: PlusCircle, path: "/loans" },
-      ]
-    },
-    { 
-      id: "sales", 
-      label: content[language].tabs.sales, 
+    {
+      id: "sales",
+      label: content[language].tabs.sales,
       icon: ShoppingCart,
+      color: "text-red-600",
       subtabs: [
-        { id: "daily", label: content[language].subtabs.dailySales, icon: Calendar, path: "/DailySales" },
-        { id: "history", label: content[language].subtabs.salesByDate, icon: FileText, path: "/HistorySalesDate" },
-      ]
+        {
+          id: "daily",
+          label: content[language].subtabs.dailySales,
+          icon: Calendar,
+          path: "/DailySales",
+        },
+        {
+          id: "history",
+          label: content[language].subtabs.salesByDate,
+          icon: FileText,
+          path: "/HistorySalesDate",
+        },
+      ],
     },
-    { 
-      id: "users", 
-      label: content[language].tabs.users, 
-      icon: User,
+    {
+      id: "financial",
+      label: content[language].tabs.financial,
+      icon: CreditCard,
+      color: "text-emerald-600",
       subtabs: [
-        { id: "userDaily", label: content[language].subtabs.userDailySales, icon: Receipt, path: "/UserDailySales" },
-        { id: "userHistory", label: content[language].subtabs.userSalesByDate, icon: FileText, path: "/UserProductsByDate" },
-      ]
+        {
+          id: "financialLog",
+          label: content[language].subtabs.financialLog,
+          icon: FileScanIcon,
+          path: "/FinancialLogForm",
+        },
+        {
+          id: "financialHistory",
+          label: content[language].subtabs.financialHistory,
+          icon: FileScanIcon,
+          path: "/FinancialLogDate",
+        },
+      ],
     },
-    { 
-      id: "financial", 
-      label: content[language].tabs.financial, 
-      icon: FileTerminalIcon,
+    {
+      id: "reports",
+      label: content[language].tabs.reports,
+      icon: BarChart3,
+      color: "text-indigo-600",
       subtabs: [
-        { id: "financialLog", label: content[language].subtabs.financialLog, icon: FileScanIcon, path: "/FinancialLogForm" },
-        { id: "financialHistory", label: content[language].subtabs.financialHistory, icon: FileScanIcon, path: "/FinancialLogDate" },
-      ]
+        {
+          id: "get",
+          label: content[language].subtabs.GetReports,
+          icon: PlusCircle,
+          path: "/reports",
+        },
+        {
+          id: "get",
+          label: content[language].subtabs.GetYearlyReports,
+          icon: PlusCircle,
+          path: "/yearlyreports",
+        },
+      ],
+    },
+    {
+      id: "users",
+      label: content[language].tabs.users,
+      icon: Users,
+      color: "text-pink-600",
+      subtabs: [
+        {
+          id: "userDaily",
+          label: content[language].subtabs.userDailySales,
+          icon: Receipt,
+          path: "/UserDailySales",
+        },
+        {
+          id: "userHistory",
+          label: content[language].subtabs.userSalesByDate,
+          icon: FileText,
+          path: "/UserProductsByDate",
+        },
+      ],
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100">
+    <div className="min-h-screen bg-white text-gray-800">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <motion.h1
-            className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
+            className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
             {content[language].dashboard}
           </motion.h1>
-          
+
           {/* Language Selector */}
-          <motion.div 
-            className="flex items-center space-x-2 bg-gray-800 rounded-xl p-2 border border-gray-700 shadow-sm"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <motion.div
+            className="flex items-center space-x-2 bg-gray-50 rounded-xl p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Globe size={18} className="text-emerald-400" />
-            <select 
+            <Globe size={18} className="text-blue-600" />
+            <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="bg-transparent text-gray-200 focus:outline-none"
+              className="bg-transparent text-gray-700 focus:outline-none font-medium"
             >
               <option value="so">Somali</option>
               <option value="en">English</option>
@@ -232,42 +287,42 @@ const Dashboard = () => {
           </motion.div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Tab Navigation */}
-          <div className="w-full lg:w-72 bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-4 border border-gray-700">
-            <nav className="flex flex-col gap-2">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar Navigation */}
+          <div className="w-full lg:w-80 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <nav className="flex flex-col gap-3">
               {tabs.map((tab) => (
-                <div key={tab.id}>
+                <div key={tab.id} className="relative">
                   <button
                     onClick={() => {
                       setActiveTab(tab.id);
                       if (tab.subtabs) toggleTabExpansion(tab.id);
                     }}
-                    className={`w-full flex items-center justify-between gap-3 p-3 rounded-xl transition-all duration-200 ${
+                    className={`w-full flex items-center justify-between gap-3 p-4 rounded-xl transition-all duration-200 ${
                       activeTab === tab.id
-                        ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg shadow-emerald-500/20"
-                        : "text-gray-300 hover:text-emerald-400 hover:bg-gray-700/50"
+                        ? "bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border border-blue-200 shadow-md"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-transparent"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <tab.icon size={20} />
-                      <span className="font-medium">{tab.label}</span>
+                      <tab.icon size={22} className={tab.color} />
+                      <span className="font-semibold">{tab.label}</span>
                     </div>
                     {tab.subtabs && (
                       <motion.div
-                        animate={{ rotate: expandedTabs[tab.id] ? 0 : -90 }}
+                        animate={{ rotate: expandedTabs[tab.id] ? 90 : 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <ChevronRight size={16} />
+                        <ChevronRight size={18} className="text-gray-400" />
                       </motion.div>
                     )}
                   </button>
-                  
+
                   {/* Subtabs */}
                   <AnimatePresence>
                     {tab.subtabs && expandedTabs[tab.id] && (
-                      <motion.div 
-                        className="ml-8 mt-2 flex flex-col gap-2"
+                      <motion.div
+                        className="ml-4 mt-2 flex flex-col gap-2 border-l-2 border-gray-100 pl-4"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
@@ -277,10 +332,12 @@ const Dashboard = () => {
                           <Link
                             key={subtab.id}
                             to={subtab.path}
-                            className="flex items-center gap-3 p-2 rounded-xl text-gray-300 hover:text-emerald-400 hover:bg-gray-700/50 transition-colors"
+                            className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
                           >
-                            <subtab.icon size={16} />
-                            <span className="text-sm">{subtab.label}</span>
+                            <subtab.icon size={18} className="text-gray-400" />
+                            <span className="text-sm font-medium">
+                              {subtab.label}
+                            </span>
                           </Link>
                         ))}
                       </motion.div>
@@ -301,19 +358,18 @@ const Dashboard = () => {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                {/* Only welcome + DashboardContent */}
-                <div>
-                  <div className="bg-gray-800/80 backdrop-blur-sm p-7 rounded-2xl shadow-lg border border-gray-700 mb-8">
-                    <h2 className="text-2xl font-bold text-white mb-4">
-                      {content[language].welcome}
-                    </h2>
-                    <p className="text-gray-300 text-lg">
-                      {content[language].welcomeDesc}
-                    </p>
-                  </div>
-
-                  <DashboardContent language={language} content={content[language]} />
+                {/* Welcome Section */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-8 rounded-2xl shadow-lg border border-blue-100 mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                    {content[language].welcome}
+                  </h2>
+                  <p className="text-gray-600 text-lg">
+                    {content[language].welcomeDesc}
+                  </p>
                 </div>
+
+                {/* Dashboard Content */}
+                <DashboardContent language={language} />
               </motion.div>
             </AnimatePresence>
           </div>
@@ -324,35 +380,149 @@ const Dashboard = () => {
 };
 
 // Dashboard Content Component
-const DashboardContent = ({ language, content }) => {
+const DashboardContent = ({ language }) => {
+  const navigate = useNavigate();
+
+  const { products , fetchProducts } = useProductsStore();
+  const { sales , fetchSales } = useSalesStore();
+
+  useEffect(() => {
+    fetchProducts();
+  } , [fetchProducts])
+  
+  useEffect(() => {
+    fetchSales();
+  } , [fetchSales])
+
+  const stats = [
+    {
+      label: language === "so" ? "Wadarta Alaabta" : "Total Products",
+      value: products?.length || 0,
+      change: "+12%",
+      icon: Package,
+      color: "text-green-600",
+      path: "/products",
+    },
+    {
+      label: language === "so" ? "Iibka Maanta" : "Today's Sales",
+      value: sales?.length || 0,
+      change: "+8%",
+      icon: ShoppingCart,
+      color: "text-blue-600",
+      path: "/DailySales",
+    },
+    {
+      label: language === "so" ? "Bakhaarka" : "Inventory",
+      value: products?.length || 0,
+      change: "-2%",
+      icon: Boxes,
+      color: "text-orange-600",
+      path: "/stock",
+    },
+    {
+      label: language === "so" ? "Isticmaalayaasha" : "Active Users",
+      value: "-",
+      change: "+5%",
+      icon: Users,
+      color: "text-purple-600",
+      path: "/UserDailySales",
+    },
+  ];
+
+  const quickActions = [
+    {
+      label: language === "so" ? "Abuur Alaab" : "Add Product",
+      icon: PlusCircle,
+      color: "bg-green-500",
+      path: "/createProduct",
+    },
+    {
+      label: language === "so" ? "Diiwaan Iib" : "Record Sale",
+      icon: ShoppingCart,
+      color: "bg-blue-500",
+      path: "/DailySales",
+    },
+    {
+      label: language === "so" ? "Arag Warbixin" : "View Report",
+      icon: BarChart3,
+      color: "bg-purple-500",
+      path: "/reports",
+    },
+    {
+      label: language === "so" ? "Maaree Bakhaar" : "Manage Stock",
+      icon: Boxes,
+      color: "bg-orange-500",
+      path: "/stock",
+    },
+  ];
+
   return (
-    <div className="bg-gray-800/80 backdrop-blur-sm p-7 rounded-2xl shadow-lg border border-gray-700">
-      <h2 className="text-2xl font-bold text-white mb-6">
-        {content.generalReport}
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div 
-          className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 p-5 rounded-xl border border-gray-700 hover:border-emerald-500/30 transition-all duration-300"
-          whileHover={{ y: -3 }}
-        >
-          <h3 className="text-lg font-semibold text-emerald-400 mb-3">
-            {content.finance}
-          </h3>
-          <p className="text-gray-300">
-            {content.financeDesc}
-          </p>
-        </motion.div>
-        <motion.div 
-          className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 p-5 rounded-xl border border-gray-700 hover:border-emerald-500/30 transition-all duration-300"
-          whileHover={{ y: -3 }}
-        >
-          <h3 className="text-lg font-semibold text-emerald-400 mb-3">
-            {language === "so" ? "Alaabta" : "Products"}
-          </h3>
-          <p className="text-gray-300">
-            {content.productsDesc}
-          </p>
-        </motion.div>
+    <div className="space-y-8">
+      {/* Statistics Grid */}
+      <div>
+        <h3 className="text-2xl font-bold text-gray-900 mb-6">
+          {language === "so" ? "Tirakoobka" : "Statistics"}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow cursor-pointer"
+              whileHover={{ y: -5 }}
+              onClick={() => navigate(stat.path)}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <stat.icon size={24} className={stat.color} />
+                <span
+                  className={`text-sm font-semibold ${
+                    stat.change.startsWith("+")
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {stat.change}
+                </span>
+              </div>
+              <h4 className="text-2xl font-bold text-gray-900 mb-1">
+                {stat.value}
+              </h4>
+              <p className="text-gray-600 text-sm">{stat.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <h3 className="text-2xl font-bold text-gray-900 mb-6">
+          {language === "so" ? "Ficilada Degdegga ah" : "Quick Actions"}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickActions.map((action, index) => (
+            <motion.button
+              key={action.label}
+              className="bg-white p-5 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-200 text-left group"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate(action.path)}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 + 0.4 }}
+            >
+              <div
+                className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
+              >
+                <action.icon size={24} className="text-white" />
+              </div>
+              <span className="font-semibold text-gray-900">
+                {action.label}
+              </span>
+            </motion.button>
+          ))}
+        </div>
       </div>
     </div>
   );
