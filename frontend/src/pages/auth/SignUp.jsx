@@ -31,19 +31,19 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-emerald-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
       <motion.div
         className="w-full max-w-md"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <div className="bg-gradient-to-br from-gray-800/90 via-gray-800/80 to-emerald-900/70 rounded-2xl shadow-2xl overflow-hidden border border-emerald-500/20 backdrop-blur-sm">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 backdrop-blur-sm">
           {/* Header Section */}
-          <div className="bg-gradient-to-r from-emerald-800/90 to-teal-700/90 p-8 text-center relative overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-center relative overflow-hidden">
             {/* Animated decorative elements */}
             <motion.div 
-              className="absolute -top-4 -left-4 w-20 h-20 rounded-full bg-emerald-400/10"
+              className="absolute -top-4 -left-4 w-20 h-20 rounded-full bg-white/10"
               animate={{ 
                 scale: [1, 1.2, 1],
                 opacity: [0.1, 0.2, 0.1]
@@ -55,7 +55,7 @@ const SignUp = () => {
               }}
             ></motion.div>
             <motion.div 
-              className="absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-teal-300/10"
+              className="absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-white/10"
               animate={{ 
                 scale: [1, 1.3, 1],
                 opacity: [0.1, 0.15, 0.1]
@@ -76,7 +76,7 @@ const SignUp = () => {
               Create Account
             </motion.h2>
             <motion.p 
-              className="mt-2 text-emerald-100/90 relative z-10"
+              className="mt-2 text-white/90 relative z-10"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
@@ -94,12 +94,12 @@ const SignUp = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Username
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-emerald-400/80" />
+                    <User className="h-5 w-5 text-blue-500" />
                   </div>
                   <input
                     type="text"
@@ -108,7 +108,7 @@ const SignUp = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, username: e.target.value })
                     }
-                    className="block w-full pl-10 pr-3 py-3 bg-gray-700/30 border border-emerald-500/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 placeholder-emerald-300/40 text-white backdrop-blur-sm transition-all duration-300"
+                    className="block w-full pl-10 pr-3 py-3 bg-gray-50 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 placeholder-gray-400 text-gray-900 transition-all duration-300 hover:border-gray-300"
                     required
                   />
                 </div>
@@ -120,12 +120,12 @@ const SignUp = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
               >
-                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
-                  Email
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-emerald-400/80" />
+                    <Mail className="h-5 w-5 text-blue-500" />
                   </div>
                   <input
                     type="email"
@@ -134,7 +134,7 @@ const SignUp = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="block w-full pl-10 pr-3 py-3 bg-gray-700/30 border border-emerald-500/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 placeholder-emerald-300/40 text-white backdrop-blur-sm transition-all duration-300"
+                    className="block w-full pl-10 pr-3 py-3 bg-gray-50 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 placeholder-gray-400 text-gray-900 transition-all duration-300 hover:border-gray-300"
                     required
                   />
                 </div>
@@ -146,12 +146,12 @@ const SignUp = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
-                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-emerald-400/80" />
+                    <Lock className="h-5 w-5 text-blue-500" />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
@@ -160,7 +160,7 @@ const SignUp = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
-                    className="block w-full pl-10 pr-10 py-3 bg-gray-700/30 border border-emerald-500/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 placeholder-emerald-300/40 text-white backdrop-blur-sm transition-all duration-300"
+                    className="block w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 placeholder-gray-400 text-gray-900 transition-all duration-300 hover:border-gray-300"
                     required
                   />
                   <button
@@ -175,7 +175,7 @@ const SignUp = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.1 }}
-                        className="text-emerald-400/80 hover:text-emerald-300 transition-colors"
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
                       >
                         {showPassword ? (
                           <EyeOff className="h-5 w-5" />
@@ -194,12 +194,12 @@ const SignUp = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
               >
-                <label className="block text-sm font-medium text-emerald-100/90 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Confirm Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-emerald-400/80" />
+                    <Lock className="h-5 w-5 text-blue-500" />
                   </div>
                   <input
                     type={showConfirmPassword ? "text" : "password"}
@@ -208,7 +208,7 @@ const SignUp = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, confirmPassword: e.target.value })
                     }
-                    className="block w-full pl-10 pr-10 py-3 bg-gray-700/30 border border-emerald-500/20 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 placeholder-emerald-300/40 text-white backdrop-blur-sm transition-all duration-300"
+                    className="block w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 placeholder-gray-400 text-gray-900 transition-all duration-300 hover:border-gray-300"
                     required
                   />
                   <button
@@ -223,7 +223,7 @@ const SignUp = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         transition={{ duration: 0.1 }}
-                        className="text-emerald-400/80 hover:text-emerald-300 transition-colors"
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
                       >
                         {showConfirmPassword ? (
                           <EyeOff className="h-5 w-5" />
@@ -237,31 +237,51 @@ const SignUp = () => {
               </motion.div>
             </div>
 
+            {/* Password Match Indicator */}
+            <motion.div 
+              className="text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: formData.password && formData.confirmPassword ? 1 : 0 }}
+            >
+              {formData.password && formData.confirmPassword && (
+                <p className={`text-sm font-medium ${
+                  formData.password === formData.confirmPassword 
+                    ? 'text-green-600' 
+                    : 'text-red-600'
+                }`}>
+                  {formData.password === formData.confirmPassword 
+                    ? '✓ Passwords match' 
+                    : '✗ Passwords do not match'
+                  }
+                </p>
+              )}
+            </motion.div>
+
             {/* Submit Button */}
             <motion.button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-gradient-to-r from-emerald-600/90 to-teal-500/90 hover:from-emerald-500/90 hover:to-teal-400/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500/50 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 relative overflow-hidden group"
+              className="w-full flex justify-center items-center py-4 px-4 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 relative overflow-hidden group"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
-              whileHover={{ scale: isLoading ? 1 : 1.01 }}
-              whileTap={{ scale: isLoading ? 1 : 0.99 }}
+              whileHover={{ scale: isLoading ? 1 : 1.02 }}
+              whileTap={{ scale: isLoading ? 1 : 0.98 }}
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-emerald-500/30 to-teal-400/30 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
+              <span className="absolute inset-0 bg-gradient-to-r from-white/20 to-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
               <span className="relative flex items-center">
                 {isLoading ? (
                   <Loader className="animate-spin h-5 w-5 mr-2" />
                 ) : (
                   <LogIn className="h-5 w-5 mr-2" />
                 )}
-                Register
+                Create Account
               </span>
             </motion.button>
 
             {/* Sign In Link */}
             <motion.div 
-              className="text-center text-sm text-emerald-100/90"
+              className="text-center text-sm text-gray-600"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
@@ -269,13 +289,50 @@ const SignUp = () => {
               Already have an account?{" "}
               <Link
                 to="/signIn"
-                className="font-medium text-emerald-400/90 hover:text-emerald-300 transition-colors"
+                className="font-medium text-blue-600 hover:text-blue-800 transition-colors"
               >
-                Sign in
+                Sign in here
               </Link>
             </motion.div>
           </form>
+
+          {/* Footer Decoration */}
+          <div className="px-8 pb-6">
+            <div className="border-t border-gray-100 pt-6">
+              <div className="flex items-center justify-center space-x-2 text-gray-400">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Additional decorative elements */}
+        <motion.div 
+          className="absolute -z-10 top-1/4 -left-10 w-32 h-32 bg-blue-200/30 rounded-full blur-xl"
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.5, 0.3]
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 6,
+            ease: "easeInOut"
+          }}
+        />
+        <motion.div 
+          className="absolute -z-10 bottom-1/4 -right-10 w-40 h-40 bg-purple-200/30 rounded-full blur-xl"
+          animate={{
+            scale: [1.1, 1, 1.1],
+            opacity: [0.3, 0.5, 0.3]
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 8,
+            ease: "easeInOut"
+          }}
+        />
       </motion.div>
     </div>
   );
