@@ -74,6 +74,74 @@ const LoanManagement = ({ language = "so" }) => {
     }
   }, [error, clearError]);
 
+  // Enhanced helper function to display creator's name
+  const getCreatorDisplayName = (createdBy) => {
+    if (!createdBy) {
+      console.log('createdBy is null or undefined');
+      return "Unknown";
+    }
+    
+    console.log('createdBy object:', createdBy);
+    console.log('Available fields:', Object.keys(createdBy));
+    
+    // Check for username (common field names)
+    if (createdBy.username) {
+      console.log('Using username:', createdBy.username);
+      return createdBy.username;
+    }
+    
+    // Check for user name fields (common variations)
+    if (createdBy.userName) {
+      console.log('Using userName:', createdBy.userName);
+      return createdBy.userName;
+    }
+    
+    if (createdBy.user && createdBy.user.username) {
+      console.log('Using user.username:', createdBy.user.username);
+      return createdBy.user.username;
+    }
+    
+    // Check for display name
+    if (createdBy.displayName) {
+      console.log('Using displayName:', createdBy.displayName);
+      return createdBy.displayName;
+    }
+    
+    // Check for name
+    if (createdBy.name) {
+      console.log('Using name:', createdBy.name);
+      return createdBy.name;
+    }
+    
+    // Check for first name + last name
+    if (createdBy.firstName && createdBy.lastName) {
+      const fullName = `${createdBy.firstName} ${createdBy.lastName}`;
+      console.log('Using firstName + lastName:', fullName);
+      return fullName;
+    }
+    
+    if (createdBy.firstName) {
+      console.log('Using firstName:', createdBy.firstName);
+      return createdBy.firstName;
+    }
+    
+    // Extract username from email (before @ symbol)
+    if (createdBy.email) {
+      const usernameFromEmail = createdBy.email.split('@')[0];
+      console.log('Extracted username from email:', usernameFromEmail);
+      return usernameFromEmail;
+    }
+    
+    console.log('No suitable field found, returning Unknown');
+    return "Unknown";
+  };
+
+  // Alternative function that extracts username from email
+  const getUsernameFromEmail = (email) => {
+    if (!email) return "Unknown";
+    return email.split('@')[0];
+  };
+
   const handleCreateChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -221,7 +289,7 @@ const LoanManagement = ({ language = "so" }) => {
       view: "Fiiri",
       markAsPaid: "Ku Calaamadee La Bixiyay",
       noLoans: "Deyn lama helin",
-      loading: "Soo dejineysa deynta...",
+      loading: "...",
       error: "Khalad ayaa dhacay",
       totalLoans: "Wadarta Deynta",
       totalAmount: "Wadarta Lacagta",
@@ -584,7 +652,7 @@ const LoanManagement = ({ language = "so" }) => {
                             )}
                             {loan.createdBy && (
                               <p className="text-gray-500 text-xs">
-                                {content[language].createdBy}: {loan.createdBy.name || loan.createdBy.email}
+                                {content[language].createdBy}: {getUsernameFromEmail(loan.createdBy.email || loan.createdBy)}
                               </p>
                             )}
                           </div>
