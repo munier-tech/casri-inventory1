@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FiEdit2, FiTrash2, FiCheck, FiX, FiPlus, FiImage, FiDollarSign, FiSearch } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiCheck, FiX, FiPlus, FiPackage, FiDollarSign, FiSearch, FiTag } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import useProductsStore from "../../store/useProductsStore";
@@ -16,9 +16,7 @@ const GetProducts = () => {
     stock: "",
     lowStockThreshold: "",
     category: "",
-    image: null,
   });
-  const [imagePreview, setImagePreview] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -41,6 +39,12 @@ const GetProducts = () => {
     product.stock < (product.lowStockThreshold || 5)
   ).length;
 
+  const getStockStatus = (stock, threshold = 5) => {
+    if (stock === 0) return { status: "out", color: "text-red-600 bg-red-50 border-red-200", text: "Dhamaatay" };
+    if (stock <= threshold) return { status: "low", color: "text-amber-600 bg-amber-50 border-amber-200", text: `Yar ${stock}` };
+    return { status: "high", color: "text-green-600 bg-green-50 border-green-200", text: `Kaydka: ${stock}` };
+  };
+
   const handleDelete = async (id) => {
     if (window.confirm("Ma hubtaa inaad rabto inaad tirtirto alaabtan?")) {
       try {
@@ -60,19 +64,7 @@ const GetProducts = () => {
       stock: product.stock,
       lowStockThreshold: product.lowStockThreshold,
       category: product.category?._id || "",
-      image: null,
     });
-    setImagePreview(product.image || null);
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setUpdatedData((prev) => ({ ...prev, image: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result);
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleUpdate = async (id) => {
@@ -83,12 +75,10 @@ const GetProducts = () => {
       formData.append("stock", updatedData.stock);
       formData.append("lowStockThreshold", updatedData.lowStockThreshold);
       formData.append("category", updatedData.category);
-      if (updatedData.image) formData.append("image", updatedData.image);
 
       await updateProduct(id, formData);
       toast.success("Alaabta si guul leh ayaa loo cusboonaysiiyay");
       setEditingProduct(null);
-      setImagePreview(null);
     } catch {
       toast.error("Khalad ayaa dhacay marka la cusboonaysiinayo alaabta");
     }
@@ -102,14 +92,12 @@ const GetProducts = () => {
       stock: "",
       lowStockThreshold: "",
       category: "",
-      image: null,
     });
-    setImagePreview(null);
   };
 
   const content = {
     title: "Liiska Alaabta",
-    tableHeaders: ["Sawir", "Magac", "Qiimaha", "Kaydka", "Qaybta", "Ficilada"],
+    tableHeaders: ["Alaabta", "Magac", "Qiimaha", "Kaydka", "Qaybta", "Ficilada"],
     noProducts: "Lama helin alaabo",
     edit: "Wax ka beddel",
     delete: "Tirtir",
@@ -140,7 +128,7 @@ const GetProducts = () => {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center">
                 <div className="bg-white/20 p-3 rounded-xl mr-4 backdrop-blur-sm">
-                  <FiPlus className="h-7 w-7 text-white" />
+                  <FiPackage className="h-7 w-7 text-white" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">{content.title}</h2>
@@ -194,7 +182,7 @@ const GetProducts = () => {
                   <p className="text-2xl font-bold text-gray-800 mt-1">{totalProducts}</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-lg">
-                  <FiPlus className="w-6 h-6 text-blue-600" />
+                  <FiPackage className="w-6 h-6 text-blue-600" />
                 </div>
               </div>
             </motion.div>
@@ -213,13 +201,13 @@ const GetProducts = () => {
                   <p className="text-xs text-red-500 mt-1">Alaabta u dhow inay Dhamaato</p>
                 </div>
                 <div className="p-3 bg-red-100 rounded-lg">
-                  <FiImage className="w-6 h-6 text-red-600" />
+                  <FiTag className="w-6 h-6 text-red-600" />
                 </div>
               </div>
             </motion.div>
           </div>
 
-          {/* Search Section - Made more prominent */}
+          {/* Search Section */}
           <div className="p-6 bg-white border-b border-gray-200">
             <div className="mb-4">
               <h3 className="text-lg font-semibold text-gray-800 mb-2">Raadi Alaabta</h3>
@@ -279,180 +267,178 @@ const GetProducts = () => {
               </thead>
               <tbody>
                 {filteredProducts && filteredProducts.length > 0 ? (
-                  filteredProducts.map((product, index) => (
-                    <motion.tr
-                      key={product._id}
-                      className={`border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 ${
-                        index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                      }`}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      whileHover={{ scale: 1.005 }}
-                    >
-                      {/* Image */}
-                      <td className="px-6 py-4">
-                        {editingProduct === product._id ? (
-                          <div className="flex flex-col items-start space-y-2">
-                            <label className="flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors">
-                              <FiImage className="w-4 h-4 mr-2" />
-                              Beddel sawir
-                              <input
-                                type="file"
-                                onChange={handleImageChange}
-                                accept="image/*"
-                                className="hidden"
-                              />
-                            </label>
-                            {imagePreview && (
-                              <img
-                                src={imagePreview}
-                                alt="preview"
-                                className="h-12 w-12 object-cover rounded-lg border-2 border-blue-200 shadow-sm"
-                              />
-                            )}
-                          </div>
-                        ) : product.image ? (
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="h-12 w-12 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                            <FiImage className="w-5 h-5 text-gray-400" />
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Name */}
-                      <td className="px-6 py-4">
-                        {editingProduct === product._id ? (
-                          <input
-                            type="text"
-                            value={updatedData.name}
-                            onChange={(e) => setUpdatedData({ ...updatedData, name: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-800">{product.name}</span>
-                            {searchTerm && (
-                              <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded border border-yellow-200">
-                                La helay
+                  filteredProducts.map((product, index) => {
+                    const stockInfo = getStockStatus(product.stock, product.lowStockThreshold);
+                    
+                    return (
+                      <motion.tr
+                        key={product._id}
+                        className={`border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 ${
+                          index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                        }`}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        whileHover={{ scale: 1.005 }}
+                      >
+                        {/* Product Icon and Info */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                              <FiPackage className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-gray-800">{product.name}</span>
+                              <span className={`text-xs px-2 py-1 rounded-full border ${stockInfo.color} mt-1`}>
+                                {stockInfo.text}
                               </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Name */}
+                        <td className="px-6 py-4">
+                          {editingProduct === product._id ? (
+                            <input
+                              type="text"
+                              value={updatedData.name}
+                              onChange={(e) => setUpdatedData({ ...updatedData, name: e.target.value })}
+                              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-800">{product.name}</span>
+                              {searchTerm && (
+                                <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded border border-yellow-200">
+                                  La helay
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Cost */}
+                        <td className="px-6 py-4">
+                          {editingProduct === product._id ? (
+                            <input
+                              type="number"
+                              value={updatedData.cost}
+                              onChange={(e) => setUpdatedData({ ...updatedData, cost: e.target.value })}
+                              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          ) : (
+                            <span className="font-semibold text-green-600 flex items-center">
+                              <FiDollarSign className="w-4 h-4 mr-1" />
+                              {product.cost}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Stock */}
+                        <td className="px-6 py-4">
+                          {editingProduct === product._id ? (
+                            <input
+                              type="number"
+                              value={updatedData.stock}
+                              onChange={(e) => setUpdatedData({ ...updatedData, stock: e.target.value })}
+                              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          ) : (
+                            <div className="flex flex-col gap-1">
+                              <span className={`font-medium ${stockInfo.color.split(' ')[0]}`}>
+                                {product.stock}
+                              </span>
+                              {product.stock > 0 && (
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                  <div 
+                                    className={`h-1.5 rounded-full ${
+                                      product.stock > 10 ? 'bg-green-500' : 
+                                      product.stock > 5 ? 'bg-amber-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ 
+                                      width: `${Math.min(100, (product.stock / Math.max(product.stock, 20)) * 100)}%` 
+                                    }}
+                                  ></div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Category */}
+                        <td className="px-6 py-4">
+                          {editingProduct === product._id ? (
+                            <select
+                              value={updatedData.category}
+                              onChange={(e) => setUpdatedData({ ...updatedData, category: e.target.value })}
+                              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="">-- Xulo Qaybta --</option>
+                              {categories &&
+                                categories.map((cat) => (
+                                  <option key={cat._id} value={cat._id}>
+                                    {cat.name}
+                                  </option>
+                                ))}
+                            </select>
+                          ) : (
+                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                              {product.category?.name || "Qayb la'aan"}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            {editingProduct === product._id ? (
+                              <>
+                                <motion.button
+                                  whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(34,197,94,0.5)" }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleUpdate(product._id)}
+                                  className="p-2.5 bg-green-500 hover:bg-green-600 rounded-xl text-white shadow-md"
+                                  title={content.save}
+                                >
+                                  <FiCheck className="w-4 h-4" />
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(156,163,175,0.5)" }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={handleCancel}
+                                  className="p-2.5 bg-gray-500 hover:bg-gray-600 rounded-xl text-white shadow-md"
+                                  title={content.cancel}
+                                >
+                                  <FiX className="w-4 h-4" />
+                                </motion.button>
+                              </>
+                            ) : (
+                              <>
+                                <motion.button
+                                  whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(59,130,246,0.5)" }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleEdit(product)}
+                                  className="p-2.5 bg-blue-500 hover:bg-blue-600 rounded-xl text-white shadow-md"
+                                  title={content.edit}
+                                >
+                                  <FiEdit2 className="w-4 h-4" />
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(239,68,68,0.5)" }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleDelete(product._id)}
+                                  className="p-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-white shadow-md"
+                                  title={content.delete}
+                                >
+                                  <FiTrash2 className="w-4 h-4" />
+                                </motion.button>
+                              </>
                             )}
                           </div>
-                        )}
-                      </td>
-
-                      {/* Cost */}
-                      <td className="px-6 py-4">
-                        {editingProduct === product._id ? (
-                          <input
-                            type="number"
-                            value={updatedData.cost}
-                            onChange={(e) => setUpdatedData({ ...updatedData, cost: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        ) : (
-                          <span className="font-semibold text-green-600">${product.cost}</span>
-                        )}
-                      </td>
-
-                      {/* Stock */}
-                      <td className="px-6 py-4">
-                        {editingProduct === product._id ? (
-                          <input
-                            type="number"
-                            value={updatedData.stock}
-                            onChange={(e) => setUpdatedData({ ...updatedData, stock: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        ) : (
-                          <span className={`font-medium ${
-                            product.stock < (product.lowStockThreshold || 5) 
-                              ? "text-red-600" 
-                              : "text-gray-700"
-                          }`}>
-                            {product.stock}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Category */}
-                      <td className="px-6 py-4">
-                        {editingProduct === product._id ? (
-                          <select
-                            value={updatedData.category}
-                            onChange={(e) => setUpdatedData({ ...updatedData, category: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="">-- Xulo Qaybta --</option>
-                            {categories &&
-                              categories.map((cat) => (
-                                <option key={cat._id} value={cat._id}>
-                                  {cat.name}
-                                </option>
-                              ))}
-                          </select>
-                        ) : (
-                          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                            {product.category?.name || "Qayb la'aan"}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          {editingProduct === product._id ? (
-                            <>
-                              <motion.button
-                                whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(34,197,94,0.5)" }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleUpdate(product._id)}
-                                className="p-2.5 bg-green-500 hover:bg-green-600 rounded-xl text-white shadow-md"
-                                title={content.save}
-                              >
-                                <FiCheck className="w-4 h-4" />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(156,163,175,0.5)" }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={handleCancel}
-                                className="p-2.5 bg-gray-500 hover:bg-gray-600 rounded-xl text-white shadow-md"
-                                title={content.cancel}
-                              >
-                                <FiX className="w-4 h-4" />
-                              </motion.button>
-                            </>
-                          ) : (
-                            <>
-                              <motion.button
-                                whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(59,130,246,0.5)" }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleEdit(product)}
-                                className="p-2.5 bg-blue-500 hover:bg-blue-600 rounded-xl text-white shadow-md"
-                                title={content.edit}
-                              >
-                                <FiEdit2 className="w-4 h-4" />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.1, boxShadow: "0 5px 15px -5px rgba(239,68,68,0.5)" }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleDelete(product._id)}
-                                className="p-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-white shadow-md"
-                                title={content.delete}
-                              >
-                                <FiTrash2 className="w-4 h-4" />
-                              </motion.button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))
+                        </td>
+                      </motion.tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={content.tableHeaders.length} className="px-6 py-12 text-center">
@@ -473,7 +459,7 @@ const GetProducts = () => {
                           </>
                         ) : (
                           <>
-                            <FiImage className="w-16 h-16 mb-4 text-gray-300" />
+                            <FiPackage className="w-16 h-16 mb-4 text-gray-300" />
                             <p className="text-lg font-medium">{content.noProducts}</p>
                             <p className="text-sm text-gray-400 mt-1">Ku dar alaab cusub si aad u bilowdo</p>
                           </>

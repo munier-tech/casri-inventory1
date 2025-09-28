@@ -125,10 +125,9 @@ const Stock = () => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
               >
-                <table className="w-full min-w-[800px]">
+                <table className="w-full min-w-[600px]">
                   <thead>
                     <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                      <th className="px-6 py-4 text-left text-gray-700 font-semibold">Sawir</th>
                       <th className="px-6 py-4 text-left text-gray-700 font-semibold">Magac</th>
                       <th className="px-6 py-4 text-left text-gray-700 font-semibold">Tirada kuu Taala</th>
                       <th className="px-6 py-4 text-left text-gray-700 font-semibold">Qaybta ay tirsantahy</th>
@@ -146,24 +145,6 @@ const Stock = () => {
                         transition={{ delay: index * 0.03 }}
                         whileHover={{ scale: 1.005, backgroundColor: "rgba(249, 250, 251, 0.8)" }}
                       >
-                        <td className="px-6 py-4">
-                          {product.image ? (
-                            <div className="relative">
-                              <img
-                                src={product.image}
-                                alt={product.name}
-                                className="h-14 w-14 object-cover rounded-lg shadow-sm border border-gray-200"
-                              />
-                              {activeTab === "soldout" && (
-                                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1 rounded-full">0</div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="h-14 w-14 bg-gray-200 rounded-lg flex items-center justify-center">
-                              <span className="text-gray-400 text-sm">--</span>
-                            </div>
-                          )}
-                        </td>
                         <td className="px-6 py-4">
                           <div>
                             <span className="font-medium text-gray-900">{product.name}</span>

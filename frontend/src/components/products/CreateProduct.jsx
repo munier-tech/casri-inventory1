@@ -218,48 +218,7 @@ const CreateProduct = () => {
               </div>
 
               {/* Image Upload */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Sawirka Alaabta
-                </label>
-                {imagePreview ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="relative inline-block"
-                  >
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="h-48 w-48 object-cover rounded-xl border-2 border-gray-200 shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </motion.div>
-                ) : (
-                  <motion.label
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200"
-                  >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <div className="bg-blue-100 p-3 rounded-full mb-3">
-                        <Upload className="w-6 h-6 text-blue-600" />
-                      </div>
-                      <p className="mb-2 text-sm text-gray-600 font-medium">
-                        Riix si aad u soo dejisato sawir
-                      </p>
-                      <p className="text-xs text-gray-500">PNG, JPG, JPEG (Ugu Badnaan 5MB)</p>
-                    </div>
-                    <input type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
-                  </motion.label>
-                )}
-              </div>
+             
             </div>
 
             {/* Submit Button */}

@@ -45,6 +45,7 @@ const Dashboard = () => {
         loans: "Amaahda",
         Purchases: "Daynta Meheradaha",
         reports: "Warbixinno",
+        Sale: "Ku Dar Iib Cusub",
         categories: "Qeybta Alaabta",
         sales: "Iibka",
         users: "Isticmaalayaasha",
@@ -57,6 +58,7 @@ const Dashboard = () => {
         GetYearlyReports: "Hel Warbixinno Sannadeed",
         createCategory: "Abuur Qayb Cusub",
         loan: "Abuur Amaah",
+        Sale: "Ku Dar Iib Cusub",
         CreatePurchases: "Hel Daynta Meheradaha",
         productList: "Liiska Alaabta",
         dailySales: "Iibka Maanta",
@@ -101,6 +103,7 @@ const Dashboard = () => {
         productList: "Product List",
         dailySales: "Daily Sales",
         salesByDate: "Sales by Date",
+        Sale : "Add New Sale",
         userDailySales: "User Daily Sales",
         userSalesByDate: "User Sales by Date",
         financialLog: "Financial Log",
@@ -193,6 +196,12 @@ const Dashboard = () => {
       icon: ShoppingCart,
       color: "text-red-600",
       subtabs: [
+        {
+          id: "Sale",
+          label: content[language].subtabs.Sale,
+          icon: Calendar,
+          path: "/AddSale",
+        },
         {
           id: "daily",
           label: content[language].subtabs.dailySales,

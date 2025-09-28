@@ -80,24 +80,25 @@ const App = () => {
 
       <div className="relative z-10 pt-14 px-4 min-h-screen">
         <Routes>
-          <Route path="/" element={user ? <CreateSale /> : <Navigate to="/signin" />} />
-          <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/" />} />
-          <Route path="/signin" element={!user ? <SignIn /> : <Navigate to="/" />} />
-          <Route path="/dashboard" element={user?.role === "admin" ? <Dashboard /> : <Navigate to="/" />} />
-          <Route path="/FinancialLogForm" element={user?.role === "admin" ? <FinancialLogForm /> : <Navigate to="/" />} />
-          <Route path="/createProduct" element={user?.role === "admin" ? <CreateProduct /> : <Navigate to="/" />} />
-          <Route path="/reports" element={user?.role === "admin" ? <GetMonthlyReport /> : <Navigate to="/" />} />
-          <Route path="/yearlyreports" element={user?.role === "admin" ? <GetYearlyReport /> : <Navigate to="/" />} />
-          <Route path="/purchases" element={user?.role === "admin" ? <PurchaseManager /> : <Navigate to="/" />} />
-          <Route path="/products" element={user?.role === "admin" ? <GetProducts /> : <Navigate to="/" />} />
-          <Route path="/DailySales" element={user?.role === "admin" ? <DailySales /> : <Navigate to="/" />} />
-          <Route path="/HistorySalesDate" element={user?.role === "admin" ? <SalesByDate /> : <Navigate to="/" />} />
-          <Route path="/UserDailySales" element={user?.role === "admin" ? <GetAllUsersDailySales /> : <Navigate to="/" />} />
-          <Route path="/UserProductsByDate" element={user?.role === "admin" ? <GetAllUsersSalesByDate /> : <Navigate to="/" />} />
-          <Route path="/stock" element={user?.role === "admin" ? <Stock /> : <Navigate to="/" />} />
-          <Route path="/categories" element={user?.role === "admin" ? <Categories /> : <Navigate to="/" />} />
-          <Route path="/loans" element={user?.role === "admin" ? <LoanManagement /> : <Navigate to="/" />} />
-          <Route path="/FinancialLogDate" element={user?.role === "admin" ? <FinancialLogDate /> : <Navigate to="/" />} />
+          <Route path="/" element={user ? <Dashboard /> : <Navigate to="/signin" />} />
+          <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/dashboard" />} />
+          <Route path="/signin" element={!user ? <SignIn /> : <Navigate to="/dashboard" />} />
+          <Route path="/dashboard" element={user?.role === "admin" ? <Dashboard /> : <Navigate to="/dashboard" />} />
+          <Route path="/FinancialLogForm" element={user?.role === "admin" ? <FinancialLogForm /> : <Navigate to="/dashboard" />} />
+          <Route path="/AddSale" element={user?.role === "admin" ? <CreateSale /> : <Navigate to="/dashboard" />} />
+          <Route path="/createProduct" element={user?.role === "admin" ? <CreateProduct /> : <Navigate to="/dashboard" />} />
+          <Route path="/reports" element={user?.role === "admin" ? <GetMonthlyReport /> : <Navigate to="/dashboard" />} />
+          <Route path="/yearlyreports" element={user?.role === "admin" ? <GetYearlyReport /> : <Navigate to="/dashboard" />} />
+          <Route path="/purchases" element={user?.role === "admin" ? <PurchaseManager /> : <Navigate to="/dashboard" />} />
+          <Route path="/products" element={user?.role === "admin" ? <GetProducts /> : <Navigate to="/dashboard" />} />
+          <Route path="/DailySales" element={user?.role === "admin" ? <DailySales /> : <Navigate to="/dashboard" />} />
+          <Route path="/HistorySalesDate" element={user?.role === "admin" ? <SalesByDate /> : <Navigate to="/dashboard" />} />
+          <Route path="/UserDailySales" element={user?.role === "admin" ? <GetAllUsersDailySales /> : <Navigate to="/dashboard" />} />
+          <Route path="/UserProductsByDate" element={user?.role === "admin" ? <GetAllUsersSalesByDate /> : <Navigate to="/dashboard" />} />
+          <Route path="/stock" element={user?.role === "admin" ? <Stock /> : <Navigate to="/dashboard" />} />
+          <Route path="/categories" element={user?.role === "admin" ? <Categories /> : <Navigate to="/dashboard" />} />
+          <Route path="/loans" element={user?.role === "admin" ? <LoanManagement /> : <Navigate to="/dashboard" />} />
+          <Route path="/FinancialLogDate" element={user?.role === "admin" ? <FinancialLogDate /> : <Navigate to="/dashboard" />} />
         </Routes>
       </div>
       <Toaster position="top-center" />

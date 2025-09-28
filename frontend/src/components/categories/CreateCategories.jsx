@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, List, Edit, Trash2, X, Upload, Image as ImageIcon } from "lucide-react";
+import { Plus, List, Edit, Trash2, X, Tag, Folder } from "lucide-react";
 import useCategoryStore from "../../store/useCategoryStore";
 
 const Categories = ({ language = "so" }) => {
@@ -17,11 +17,18 @@ const Categories = ({ language = "so" }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
-  const [formImage, setFormImage] = useState(null);
-  const [formImagePreview, setFormImagePreview] = useState(null);
   const [editFormData, setEditFormData] = useState({ name: "", description: "" });
-  const [editImage, setEditImage] = useState(null);
-  const [editImagePreview, setEditImagePreview] = useState(null);
+
+  const categoryColors = [
+    "from-blue-500 to-purple-500",
+    "from-green-500 to-emerald-500",
+    "from-orange-500 to-amber-500",
+    "from-pink-500 to-rose-500",
+    "from-indigo-500 to-blue-600",
+    "from-teal-500 to-cyan-500",
+    "from-yellow-500 to-orange-500",
+    "from-red-500 to-pink-500"
+  ];
 
   useEffect(() => {
     fetchCategories();
@@ -37,38 +44,15 @@ const Categories = ({ language = "so" }) => {
     setEditFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCreateImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setFormImagePreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleEditImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setEditImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setEditImagePreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
     data.append("name", formData.name);
     data.append("description", formData.description);
-    if (formImage) data.append("image", formImage);
 
     await createCategory(data);
     if (!error) {
       setFormData({ name: "", description: "" });
-      setFormImage(null);
-      setFormImagePreview(null);
       setIsCreating(false);
     }
   };
@@ -78,7 +62,6 @@ const Categories = ({ language = "so" }) => {
     const data = new FormData();
     data.append("name", editFormData.name);
     data.append("description", editFormData.description);
-    if (editImage) data.append("image", editImage);
 
     await updateCategory(editingId, data);
     if (!error) {
@@ -89,21 +72,16 @@ const Categories = ({ language = "so" }) => {
   const startEditing = (category) => {
     setEditingId(category._id);
     setEditFormData({ name: category.name, description: category.description || "" });
-    setEditImagePreview(category.imageUrl || null);
   };
 
   const cancelEditing = () => {
     setEditingId(null);
     setEditFormData({ name: "", description: "" });
-    setEditImage(null);
-    setEditImagePreview(null);
   };
 
   const cancelCreating = () => {
     setIsCreating(false);
     setFormData({ name: "", description: "" });
-    setFormImage(null);
-    setFormImagePreview(null);
   };
 
   const handleDelete = async (id) => {
@@ -118,6 +96,10 @@ const Categories = ({ language = "so" }) => {
     }
   };
 
+  const getCategoryColor = (index) => {
+    return categoryColors[index % categoryColors.length];
+  };
+
   const content = {
     so: {
       title: "Qaybaha Alaabta",
@@ -126,7 +108,6 @@ const Categories = ({ language = "so" }) => {
       editTitle: "Wax Ka Beddel Qaybta",
       nameLabel: "Magaca Qaybta",
       descriptionLabel: "Sharaxaad",
-      imageLabel: "Sawirka",
       cancel: "Jooji",
       save: "Kaydi",
       delete: "Tirtir",
@@ -134,8 +115,6 @@ const Categories = ({ language = "so" }) => {
       noCategories: "Ma jiro qaybo la keydiyay",
       loading: "Soo dejineysa qaybaha...",
       error: "Khalad ayaa dhacay",
-      changeImage: "Beddel sawirka",
-      uploadImage: "Soo rar sawir",
       existingCategories: "Qaybaha Hadda Jira",
       manageCategories: "Maamul qaybaha alaabtaaga"
     },
@@ -146,7 +125,6 @@ const Categories = ({ language = "so" }) => {
       editTitle: "Edit Category",
       nameLabel: "Category Name",
       descriptionLabel: "Description",
-      imageLabel: "Image",
       cancel: "Cancel",
       save: "Save",
       delete: "Delete",
@@ -154,8 +132,6 @@ const Categories = ({ language = "so" }) => {
       noCategories: "No categories saved",
       loading: "Loading categories...",
       error: "An error occurred",
-      changeImage: "Change image",
-      uploadImage: "Upload image",
       existingCategories: "Existing Categories",
       manageCategories: "Manage your product categories"
     },
@@ -175,7 +151,7 @@ const Categories = ({ language = "so" }) => {
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div className="flex items-center">
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-2xl mr-4 shadow-lg">
-                  <List className="h-7 w-7 text-white" />
+                  <Folder className="h-7 w-7 text-white" />
                 </div>
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900">{content[language].title}</h2>
@@ -235,7 +211,7 @@ const Categories = ({ language = "so" }) => {
                   className="text-center py-16 bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl border-2 border-dashed border-gray-200"
                 >
                   <div className="bg-white p-4 rounded-2xl shadow-sm inline-block mb-4">
-                    <List className="h-16 w-16 text-gray-400 mx-auto" />
+                    <Folder className="h-16 w-16 text-gray-400 mx-auto" />
                   </div>
                   <p className="text-gray-600 text-xl mb-2">{content[language].noCategories}</p>
                   <p className="text-gray-500">
@@ -260,19 +236,11 @@ const Categories = ({ language = "so" }) => {
                       
                       <div className="relative z-10">
                         <div className="flex flex-col sm:flex-row gap-4 items-start">
-                          {category.imageUrl ? (
-                            <div className="flex-shrink-0">
-                              <img
-                                src={category.imageUrl}
-                                alt={category.name}
-                                className="w-20 h-20 object-cover rounded-2xl shadow-md border-2 border-white"
-                              />
+                          <div className="flex-shrink-0">
+                            <div className={`w-20 h-20 bg-gradient-to-br ${getCategoryColor(index)} rounded-2xl flex items-center justify-center shadow-md border-2 border-white`}>
+                              <Tag className="h-8 w-8 text-white" />
                             </div>
-                          ) : (
-                            <div className="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center shadow-md border-2 border-white">
-                              <ImageIcon className="h-8 w-8 text-gray-400" />
-                            </div>
-                          )}
+                          </div>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-start mb-2">
@@ -375,43 +343,6 @@ const Categories = ({ language = "so" }) => {
                       placeholder={language === "so" ? "Geli sharaxaad (ikhtiyaari)" : "Enter description (optional)"}
                     />
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {content[language].imageLabel}
-                    </label>
-                    {formImagePreview ? (
-                      <div className="space-y-3">
-                        <img 
-                          src={formImagePreview} 
-                          alt="Preview" 
-                          className="w-32 h-32 object-cover rounded-2xl border-2 border-gray-200 shadow-sm" 
-                        />
-                        <label className="flex items-center justify-center px-4 py-3 bg-blue-50 text-blue-700 rounded-2xl border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors">
-                          <Upload className="h-4 w-4 mr-2" />
-                          {content[language].changeImage}
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleCreateImageChange} 
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all duration-200">
-                        <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                        <span className="text-gray-600 font-medium">{content[language].uploadImage}</span>
-                        <span className="text-sm text-gray-500 mt-1">PNG, JPG, JPEG</span>
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          onChange={handleCreateImageChange} 
-                          className="hidden"
-                        />
-                      </label>
-                    )}
-                  </div>
 
                   <div className="flex justify-end gap-3 pt-4">
                     <button
@@ -485,43 +416,6 @@ const Categories = ({ language = "so" }) => {
                       rows={3}
                       className="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                     />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {content[language].imageLabel}
-                    </label>
-                    {editImagePreview ? (
-                      <div className="space-y-3">
-                        <img 
-                          src={editImagePreview} 
-                          alt="Preview" 
-                          className="w-32 h-32 object-cover rounded-2xl border-2 border-gray-200 shadow-sm" 
-                        />
-                        <label className="flex items-center justify-center px-4 py-3 bg-blue-50 text-blue-700 rounded-2xl border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors">
-                          <Upload className="h-4 w-4 mr-2" />
-                          {content[language].changeImage}
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={handleEditImageChange} 
-                            className="hidden"
-                          />
-                        </label>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all duration-200">
-                        <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                        <span className="text-gray-600 font-medium">{content[language].uploadImage}</span>
-                        <span className="text-sm text-gray-500 mt-1">PNG, JPG, JPEG</span>
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          onChange={handleEditImageChange} 
-                          className="hidden"
-                        />
-                      </label>
-                    )}
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4">
