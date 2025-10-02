@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import useReportStore from '../../store/useMonthlyReport';
+import useFinancialStore from '../../store/useFinancialStore';
 
 const GetMonthlyReport = () => {
   const {
@@ -15,11 +16,50 @@ const GetMonthlyReport = () => {
     clearError
   } = useReportStore();
 
+  const {
+    financialLogs,
+    loading: financialLoading,
+    fetchLogsByDate,
+    total: financialTotals
+  } = useFinancialStore();
+
   const [localYear, setLocalYear] = useState(selectedYear);
   const [localMonth, setLocalMonth] = useState(selectedMonth);
 
+  // Debug effect to see what's happening
   useEffect(() => {
-    fetchMonthlyReport(selectedYear, selectedMonth);
+    console.log('=== DEBUG INFO ===');
+    console.log('Selected Date:', `${selectedYear}-${selectedMonth}`);
+    console.log('Monthly Report:', monthlyReport);
+    console.log('Financial Logs:', financialLogs);
+    console.log('Financial Totals:', financialTotals);
+    console.log('Financial Loading:', financialLoading);
+  }, [monthlyReport, financialLogs, financialTotals, financialLoading, selectedYear, selectedMonth]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchMonthlyReport(selectedYear, selectedMonth);
+      
+      // Format date for financial API - try different formats
+      const dateFormats = [
+        `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`,
+        `${selectedYear}-${selectedMonth}`,
+        `${selectedYear}/${selectedMonth.toString().padStart(2, '0')}`,
+        `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
+      ];
+      
+      // Try each date format until one works
+      for (const dateFormat of dateFormats) {
+        console.log('Trying date format:', dateFormat);
+        await fetchLogsByDate(dateFormat);
+        if (financialLogs && financialLogs.length > 0) {
+          console.log('Success with date format:', dateFormat);
+          break;
+        }
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Calculate profit for a single sale
@@ -57,11 +97,70 @@ const GetMonthlyReport = () => {
     }, 0);
   };
 
+  // Get expenses from financial logs with better filtering
+  const getExpensesFromFinancialLogs = () => {
+    if (!financialLogs || !Array.isArray(financialLogs)) {
+      console.log('No financial logs available');
+      return [];
+    }
+    
+    console.log('All financial logs:', financialLogs);
+    
+    const expenses = financialLogs.filter(log => {
+      const isExpense = 
+        log.type === 'expense' || 
+        log.category === 'expense' ||
+        (log.amount && log.amount < 0) ||
+        (log.description && log.description.toLowerCase().includes('expense')) ||
+        (log.name && log.name.toLowerCase().includes('expense'));
+      
+      if (isExpense) {
+        console.log('Found expense:', log);
+      }
+      
+      return isExpense;
+    });
+    
+    console.log('Filtered expenses:', expenses);
+    return expenses;
+  };
+
+  // Calculate total expenses from financial logs
+  const calculateTotalExpenses = () => {
+    const expenses = getExpensesFromFinancialLogs();
+    const total = expenses.reduce((total, expense) => {
+      const amount = Math.abs(expense.amount || 0);
+      return total + amount;
+    }, 0);
+    
+    console.log('Calculated expenses total:', total);
+    return total;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     clearError();
     setSelectedDate(localYear, localMonth);
+    
+    // Fetch both monthly report and financial logs
     await fetchMonthlyReport(localYear, localMonth);
+    
+    // Try multiple date formats for financial API
+    const dateFormats = [
+      `${localYear}-${localMonth.toString().padStart(2, '0')}`,
+      `${localYear}-${localMonth}`,
+      `${localYear}/${localMonth.toString().padStart(2, '0')}`,
+      `${localYear}-${localMonth.toString().padStart(2, '0')}-01`
+    ];
+    
+    for (const dateFormat of dateFormats) {
+      console.log('Trying date format:', dateFormat);
+      await fetchLogsByDate(dateFormat);
+      if (financialLogs && financialLogs.length > 0) {
+        console.log('Success with date format:', dateFormat);
+        break;
+      }
+    }
   };
 
   const handleCurrentMonth = () => {
@@ -70,7 +169,11 @@ const GetMonthlyReport = () => {
     setLocalYear(currentYear);
     setLocalMonth(currentMonth);
     setSelectedDate(currentYear, currentMonth);
+    
+    // Fetch both monthly report and financial logs
     fetchMonthlyReport(currentYear, currentMonth);
+    const dateString = `${currentYear}-${currentMonth.toString().padStart(2, '0')}`;
+    fetchLogsByDate(dateString);
   };
 
   const handlePreviousMonth = () => {
@@ -78,7 +181,11 @@ const GetMonthlyReport = () => {
     setLocalYear(newDate.year());
     setLocalMonth(newDate.month() + 1);
     setSelectedDate(newDate.year(), newDate.month() + 1);
+    
+    // Fetch both monthly report and financial logs
     fetchMonthlyReport(newDate.year(), newDate.month() + 1);
+    const dateString = `${newDate.year()}-${(newDate.month() + 1).toString().padStart(2, '0')}`;
+    fetchLogsByDate(dateString);
   };
 
   const handleNextMonth = () => {
@@ -86,7 +193,11 @@ const GetMonthlyReport = () => {
     setLocalYear(newDate.year());
     setLocalMonth(newDate.month() + 1);
     setSelectedDate(newDate.year(), newDate.month() + 1);
+    
+    // Fetch both monthly report and financial logs
     fetchMonthlyReport(newDate.year(), newDate.month() + 1);
+    const dateString = `${newDate.year()}-${(newDate.month() + 1).toString().padStart(2, '0')}`;
+    fetchLogsByDate(dateString);
   };
 
   const years = Array.from({ length: 7 }, (_, i) => dayjs().year() - 5 + i);
@@ -125,7 +236,7 @@ const GetMonthlyReport = () => {
   const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
   const cardVariants = { hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } } };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading || financialLoading) return <LoadingSpinner />;
 
   const renderTable = (data, columns, title, colorEmoji) => {
     if (!data || data.length === 0) return (
@@ -170,6 +281,31 @@ const GetMonthlyReport = () => {
   const totalRevenue = monthlyReport ? calculateTotalRevenue(monthlyReport.sales) : 0;
   const totalProfit = monthlyReport ? calculateTotalProfit(monthlyReport.sales) : 0;
   const totalProfitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+  
+  // Get expenses from financial logs
+  const expenses = getExpensesFromFinancialLogs();
+  const totalExpenses = calculateTotalExpenses();
+
+  // Debug display
+  const debugInfo = (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+      <h3 className="font-semibold text-yellow-800 mb-2">Debug Information:</h3>
+      <div className="grid grid-cols-2 gap-4 text-sm">
+        <div>
+          <strong>Financial Logs Count:</strong> {financialLogs?.length || 0}
+        </div>
+        <div>
+          <strong>Expenses Found:</strong> {expenses.length}
+        </div>
+        <div>
+          <strong>Total Expenses:</strong> ${totalExpenses}
+        </div>
+        <div>
+          <strong>Financial Totals from API:</strong> ${financialTotals?.expensesTotal || 0}
+        </div>
+      </div>
+    </motion.div>
+  );
 
   return (
     <motion.div className="container mx-auto p-4 max-w-7xl" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
@@ -215,6 +351,9 @@ const GetMonthlyReport = () => {
         </motion.div>
       )}</AnimatePresence>
 
+      {/* Debug Info */}
+      {debugInfo}
+
       {/* Totals */}
       {monthlyReport && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -235,7 +374,10 @@ const GetMonthlyReport = () => {
             className="bg-red-50 p-6 rounded-2xl border border-red-200 shadow-sm"
           >
             <h3 className="font-semibold text-red-800 mb-2">Wadarta Kharashka</h3>
-            <p className="text-3xl font-bold text-red-600">${monthlyReport.totals.totalExpenses?.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-red-600">${totalExpenses.toLocaleString()}</p>
+            <p className="text-sm text-red-600 mt-1">
+              {expenses.length} kharash
+            </p>
           </motion.div>
           
           <motion.div 
@@ -245,7 +387,9 @@ const GetMonthlyReport = () => {
             className="bg-green-50 p-6 rounded-2xl border border-green-200 shadow-sm"
           >
             <h3 className="font-semibold text-green-800 mb-2">Balance</h3>
-            <p className="text-3xl font-bold text-green-600">${monthlyReport.totals.balance?.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-green-600">
+              ${(monthlyReport.totals.totalIncome - totalExpenses).toLocaleString()}
+            </p>
           </motion.div>
           
           <motion.div 
@@ -302,19 +446,48 @@ const GetMonthlyReport = () => {
             { key: 'user', label: 'Ka sameeyay', render: row => row.user?.username || 'N/A' }
           ], 'Financial Incomes', '💵')}
 
-          {renderTable(monthlyReport.expenses, [
+          {/* Expenses from Financial Store */}
+          {renderTable(expenses, [
             { key: 'createdAt', label: 'Taariikhda', render: row => dayjs(row.createdAt).format('DD/MM/YYYY HH:mm') },
-            { key: 'name', label: 'Magaca' },
-            { key: 'amount', label: 'Qiimaha', render: row => `$${row.amount?.toLocaleString()}` },
+            { key: 'description', label: 'Sharaxaada', render: row => row.description || row.name || row.note || 'N/A' },
+            { key: 'category', label: 'Qaybta', render: row => row.category || row.type || 'N/A' },
+            { key: 'amount', label: 'Qiimaha', render: row => {
+              const amount = Math.abs(row.amount || 0);
+              return `$${amount.toLocaleString()}`;
+            }},
             { key: 'user', label: 'Ka sameeyay', render: row => row.user?.username || 'N/A' }
           ], 'Expenses', '🛒')}
 
           {renderTable(monthlyReport.purchases, [
             { key: 'createdAt', label: 'Taariikhda', render: row => dayjs(row.createdAt).format('DD/MM/YYYY HH:mm') },
-            { key: 'product', label: 'Magaca Alaabta', render: row => row.product?.name || 'N/A' },
+            { key: 'product', label: 'Magaca Alaabta', render: row => {
+              return row.product?.name || 
+                     row.productName || 
+                     row.product?.productName || 
+                     'N/A';
+            }},
             { key: 'quantity', label: 'Tirada' },
-            { key: 'totalAmount', label: 'Qiimaha', render: row => `$${row.totalAmount?.toLocaleString()}` },
-            { key: 'supplier', label: 'Iibiyaha', render: row => row.supplier?.username || 'N/A' }
+            { key: 'price', label: 'Qiimaha', render: row => {
+              const price = row.price || 
+                           row.cost || 
+                           row.unitPrice || 
+                           row.product?.cost || 
+                           0;
+              return `$${price.toLocaleString()}`;
+            }},
+            { key: 'totalAmount', label: 'Wadarta', render: row => {
+              const total = row.totalAmount || 
+                           row.total || 
+                           row.totalCost || 
+                           0;
+              return `$${total.toLocaleString()}`;
+            }},
+            { key: 'supplier', label: 'Iibiyaha', render: row => {
+              return row.supplier?.username || 
+                     row.supplier?.name || 
+                     row.supplierName || 
+                     'N/A';
+            }}
           ], 'Purchases', '📦')}
         </>
       )}
