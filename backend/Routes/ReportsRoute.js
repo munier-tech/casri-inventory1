@@ -1,15 +1,21 @@
 import express from "express";
 import { protectedRoute } from "../middlewares/authMiddleware.js";
-import { getMonthlyReport, getTopProducts, getYearlyReport } from "../Controllers/reportController.js";
+import { 
+  getMonthlyReport, 
+  getYearlyReport, 
+  getDailyReport
+} from "../Controllers/reportController.js";
+
 const router = express.Router();
 
+// Daily report
+router.get("/daily-report/:date", protectedRoute, getDailyReport);
+
+// Monthly report
+router.get("/monthly-report/:year/:month", protectedRoute, getMonthlyReport);
+
+// Yearly report
+router.get("/yearly-report/:year", protectedRoute, getYearlyReport);
 
 
-router.get("/MonthlyReport/:year/:month" , protectedRoute , getMonthlyReport)
-router.get("/YearlyReport/:year", protectedRoute, getYearlyReport);
-router.get("/bestSelling" , protectedRoute , getTopProducts)
-
-
-
-
-export default router
+export default router;

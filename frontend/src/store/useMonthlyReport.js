@@ -1,36 +1,82 @@
 import { create } from "zustand";
 import axios from "../lib/axios"; // your custom Axios instance
 
-const useSalesReportStore = create((set) => ({
+const useReportStore = create((set) => ({
+  // -------------------- STATE --------------------
+  dailyReport: null,
   monthlyReport: null,
+  yearlyReport: null,
   topProducts: [],
   loading: false,
   error: null,
+
+  // Defaults: today's date
+  selectedDate: new Date().toISOString().split("T")[0], // YYYY-MM-DD
   selectedYear: new Date().getFullYear(),
   selectedMonth: new Date().getMonth() + 1,
 
   // -------------------- SET SELECTED DATE --------------------
-  setSelectedDate: (year, month) => {
-    set({ selectedYear: year, selectedMonth: month });
+  setSelectedDate: (date) => set({ selectedDate: date }),
+  setSelectedYearMonth: (year, month) => set({ selectedYear: year, selectedMonth: month }),
+
+  // -------------------- FETCH DAILY REPORT --------------------
+  fetchDailyReport: async (date) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await axios.get(`/reports/daily-report/${date}`);
+      const reportData = res.data;
+      set({ dailyReport: reportData, loading: false });
+      return reportData;
+    } catch (err) {
+      set({
+        error:
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Failed to fetch daily report",
+        dailyReport: null,
+        loading: false,
+      });
+      throw err;
+    }
   },
 
   // -------------------- FETCH MONTHLY REPORT --------------------
   fetchMonthlyReport: async (year, month) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.get(`/reports/MonthlyReport/${year}/${month}`);
-      // Backend returns { message: "...", totalSales: X, count: Y, sales: [...] }
+      const res = await axios.get(`/reports/monthly-report/${year}/${month}`);
       const reportData = res.data;
-      set({ 
-        monthlyReport: reportData, 
-        loading: false 
-      });
+      set({ monthlyReport: reportData, loading: false });
       return reportData;
     } catch (err) {
-      set({ 
-        error: err.response?.data?.message || err.response?.data?.error || "Failed to fetch monthly report", 
+      set({
+        error:
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Failed to fetch monthly report",
         monthlyReport: null,
-        loading: false 
+        loading: false,
+      });
+      throw err;
+    }
+  },
+
+  // -------------------- FETCH YEARLY REPORT --------------------
+  fetchYearlyReport: async (year) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await axios.get(`/reports/yearly-report/${year}`);
+      const reportData = res.data;
+      set({ yearlyReport: reportData, loading: false });
+      return reportData;
+    } catch (err) {
+      set({
+        error:
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Failed to fetch yearly report",
+        yearlyReport: null,
+        loading: false,
       });
       throw err;
     }
@@ -40,42 +86,39 @@ const useSalesReportStore = create((set) => ({
   fetchTopProducts: async () => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.get("/reports/bestSelling");
-      // Backend returns { message: "...", data: [...] }
+      const res = await axios.get("/reports/best-selling");
       const topProductsData = res.data.data || res.data;
-      set({ 
-        topProducts: Array.isArray(topProductsData) ? topProductsData : [], 
-        loading: false 
+      set({
+        topProducts: Array.isArray(topProductsData) ? topProductsData : [],
+        loading: false,
       });
       return topProductsData;
     } catch (err) {
-      set({ 
-        error: err.response?.data?.message || err.response?.data?.error || "Failed to fetch top products", 
+      set({
+        error:
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Failed to fetch top products",
         topProducts: [],
-        loading: false 
+        loading: false,
       });
       throw err;
     }
   },
 
-  // -------------------- CLEAR ERROR --------------------
-  clearError: () => {
-    set({ error: null });
-  },
-
-  // -------------------- CLEAR MONTHLY REPORT --------------------
-  clearMonthlyReport: () => {
-    set({ monthlyReport: null });
-  },
-
-  // -------------------- CLEAR ALL DATA --------------------
-  clearAllData: () => {
-    set({ 
-      monthlyReport: null, 
-      topProducts: [], 
-      error: null 
-    });
-  }
+  // -------------------- CLEARERS --------------------
+  clearError: () => set({ error: null }),
+  clearDailyReport: () => set({ dailyReport: null }),
+  clearMonthlyReport: () => set({ monthlyReport: null }),
+  clearYearlyReport: () => set({ yearlyReport: null }),
+  clearAllData: () =>
+    set({
+      dailyReport: null,
+      monthlyReport: null,
+      yearlyReport: null,
+      topProducts: [],
+      error: null,
+    }),
 }));
 
-export default useSalesReportStore;
+export default useReportStore;

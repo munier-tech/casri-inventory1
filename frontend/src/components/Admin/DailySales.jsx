@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FiCalendar, FiDollarSign, FiPackage, FiRefreshCw, FiUser, FiSearch, FiTrash2, FiEdit, FiCheck, FiX } from "react-icons/fi";
+import { FiCalendar, FiDollarSign, FiPackage, FiRefreshCw, FiUser, FiSearch, FiTrash2, FiEdit, FiCheck, FiX, FiTrendingUp } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";
 import useSalesStore from "../../store/UseSalesStore";
@@ -34,6 +34,30 @@ const DailySales = () => {
       setFilteredSales(filtered);
     }
   }, [dailySales, searchTerm]);
+
+  // Calculate profit for a single sale
+  const calculateSaleProfit = (sale) => {
+    const productCost = sale.product?.cost || 0;
+    const sellingPrice = sale.sellingCost || sale.sellingPrice || 0;
+    const quantity = sale.quantity || 0;
+    
+    const profitPerUnit = sellingPrice - productCost;
+    const totalProfit = profitPerUnit * quantity;
+    
+    return {
+      profitPerUnit,
+      totalProfit,
+      profitMargin: sellingPrice > 0 ? (profitPerUnit / sellingPrice) * 100 : 0
+    };
+  };
+
+  // Calculate total profit for all filtered sales
+  const calculateTotalProfit = () => {
+    return filteredSales.reduce((total, sale) => {
+      const profitData = calculateSaleProfit(sale);
+      return total + profitData.totalProfit;
+    }, 0);
+  };
 
   const handleDateChange = (e) => {
     setSelectedDate(e.target.value);
@@ -80,6 +104,7 @@ const DailySales = () => {
 
   const totalSales = filteredSales.reduce((sum, sale) => sum + (sale.totalAmount || sale.total || 0), 0);
   const totalQuantity = filteredSales.reduce((sum, sale) => sum + sale.quantity, 0);
+  const totalProfit = calculateTotalProfit();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 text-gray-900 py-8 px-4 sm:px-6 lg:px-8">
@@ -144,7 +169,7 @@ const DailySales = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -195,6 +220,27 @@ const DailySales = () => {
               </div>
             </div>
           </motion.div>
+
+          {/* Profit Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 shadow-xl text-white"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-amber-100 text-sm">Faaiidada Wadarta</p>
+                <p className="text-2xl font-bold">${totalProfit.toFixed(2)}</p>
+                <p className="text-amber-100 text-xs mt-1">
+                  {totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : 0}% Faaiido
+                </p>
+              </div>
+              <div className="bg-white/20 p-3 rounded-full">
+                <FiTrendingUp className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Sales Table */}
@@ -237,142 +283,172 @@ const DailySales = () => {
                 <thead>
                   <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Alaabta</th>
+                    <th className="px-6 py-4 text-left text-gray-700 font-semibold">Qiimaha Alaabta</th>
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Tirada</th>
-                    <th className="px-6 py-4 text-left text-gray-700 font-semibold">Qiimaha</th>
+                    <th className="px-6 py-4 text-left text-gray-700 font-semibold">Qiimaha Iibka</th>
+                    <th className="px-6 py-4 text-left text-gray-700 font-semibold">Faaiidada</th>
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Wadarta</th>
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Wakhti</th>
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Ficilada</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSales.map((sale, index) => (
-                    <motion.tr
-                      key={sale._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors duration-150"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center shadow-sm">
-                            <FiPackage className="h-6 w-6 text-blue-600" />
+                  {filteredSales.map((sale, index) => {
+                    const profitData = calculateSaleProfit(sale);
+                    const productCost = sale.product?.cost || 0;
+                    
+                    return (
+                      <motion.tr
+                        key={sale._id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors duration-150"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center shadow-sm">
+                              <FiPackage className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">{sale.product?.name || "Alaab la'aan"}</p>
+                              <p className="text-sm text-gray-500">ID: {sale.product?._id?.substring(0, 8)}...</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold text-gray-900">{sale.product?.name || "Alaab la'aan"}</p>
-                            <p className="text-sm text-gray-500">ID: {sale.product?._id?.substring(0, 8)}...</p>
-                          </div>
-                        </div>
-                      </td>
-                      
-                      {/* Quantity */}
-                      <td className="px-6 py-4">
-                        {editingSale === sale._id ? (
-                          <input
-                            type="number"
-                            min="1"
-                            value={updatedData.quantity}
-                            onChange={(e) => setUpdatedData({
-                              ...updatedData,
-                              quantity: parseInt(e.target.value) || 0
-                            })}
-                            className="w-20 px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        ) : (
-                          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {sale.quantity}
+                        </td>
+
+                        {/* Product Cost */}
+                        <td className="px-6 py-4">
+                          <span className="text-gray-600 font-medium">
+                            ${productCost.toFixed(2)}
                           </span>
-                        )}
-                      </td>
-                      
-                      {/* Selling Cost */}
-                      <td className="px-6 py-4">
-                        {editingSale === sale._id ? (
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={updatedData.sellingCost}
-                            onChange={(e) => setUpdatedData({
-                              ...updatedData,
-                              sellingCost: parseFloat(e.target.value) || 0
-                            })}
-                            className="w-24 px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        ) : (
-                          <span className="text-blue-600 font-semibold">
-                            ${sale.sellingCost?.toFixed(2) || sale.sellingPrice?.toFixed(2)}
-                          </span>
-                        )}
-                      </td>
-                      
-                      {/* Total Amount */}
-                      <td className="px-6 py-4">
-                        <span className="text-emerald-600 font-bold text-lg">
-                          ${(editingSale === sale._id 
-                            ? (updatedData.quantity * updatedData.sellingCost).toFixed(2)
-                            : (sale.totalAmount || sale.total || 0).toFixed(2)
-                          )}
-                        </span>
-                      </td>
-                      
-                      {/* Time */}
-                      <td className="px-6 py-4">
-                        <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded-full">
-                          {dayjs(sale.createdAt).format("HH:mm")}
-                        </span>
-                      </td>
-                      
-                      {/* Actions */}
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
+                        </td>
+                        
+                        {/* Quantity */}
+                        <td className="px-6 py-4">
                           {editingSale === sale._id ? (
-                            <>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleUpdateSale(sale._id)}
-                                className="p-2 bg-green-500 hover:bg-green-600 rounded-lg text-white shadow-sm transition-colors"
-                                title="Kaydi"
-                              >
-                                <FiCheck className="h-4 w-4" />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={handleCancelEdit}
-                                className="p-2 bg-gray-500 hover:bg-gray-600 rounded-lg text-white shadow-sm transition-colors"
-                                title="Jooji"
-                              >
-                                <FiX className="h-4 w-4" />
-                              </motion.button>
-                            </>
+                            <input
+                              type="number"
+                              min="1"
+                              value={updatedData.quantity}
+                              onChange={(e) => setUpdatedData({
+                                ...updatedData,
+                                quantity: parseInt(e.target.value) || 0
+                              })}
+                              className="w-20 px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
                           ) : (
-                            <>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleEditSale(sale)}
-                                className="p-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white shadow-sm transition-colors"
-                                title="Wax ka beddel iibka"
-                              >
-                                <FiEdit className="h-4 w-4" />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleDeleteSale(sale._id)}
-                                className="p-2 bg-red-500 hover:bg-red-600 rounded-lg text-white shadow-sm transition-colors"
-                                title="Tirtir iibka"
-                              >
-                                <FiTrash2 className="h-4 w-4" />
-                              </motion.button>
-                            </>
+                            <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                              {sale.quantity}
+                            </span>
                           )}
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
+                        </td>
+                        
+                        {/* Selling Cost */}
+                        <td className="px-6 py-4">
+                          {editingSale === sale._id ? (
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={updatedData.sellingCost}
+                              onChange={(e) => setUpdatedData({
+                                ...updatedData,
+                                sellingCost: parseFloat(e.target.value) || 0
+                              })}
+                              className="w-24 px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          ) : (
+                            <span className="text-blue-600 font-semibold">
+                              ${sale.sellingCost?.toFixed(2) || sale.sellingPrice?.toFixed(2)}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Profit */}
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className={`font-semibold ${
+                              profitData.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              ${profitData.totalProfit.toFixed(2)}
+                            </span>
+                            <span className={`text-xs ${
+                              profitData.profitMargin >= 0 ? 'text-green-500' : 'text-red-500'
+                            }`}>
+                              {profitData.profitMargin.toFixed(1)}%
+                            </span>
+                          </div>
+                        </td>
+                        
+                        {/* Total Amount */}
+                        <td className="px-6 py-4">
+                          <span className="text-emerald-600 font-bold text-lg">
+                            ${(editingSale === sale._id 
+                              ? (updatedData.quantity * updatedData.sellingCost).toFixed(2)
+                              : (sale.totalAmount || sale.total || 0).toFixed(2)
+                            )}
+                          </span>
+                        </td>
+                        
+                        {/* Time */}
+                        <td className="px-6 py-4">
+                          <span className="text-gray-600 text-sm bg-gray-100 px-2 py-1 rounded-full">
+                            {dayjs(sale.createdAt).format("HH:mm")}
+                          </span>
+                        </td>
+                        
+                        {/* Actions */}
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            {editingSale === sale._id ? (
+                              <>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleUpdateSale(sale._id)}
+                                  className="p-2 bg-green-500 hover:bg-green-600 rounded-lg text-white shadow-sm transition-colors"
+                                  title="Kaydi"
+                                >
+                                  <FiCheck className="h-4 w-4" />
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={handleCancelEdit}
+                                  className="p-2 bg-gray-500 hover:bg-gray-600 rounded-lg text-white shadow-sm transition-colors"
+                                  title="Jooji"
+                                >
+                                  <FiX className="h-4 w-4" />
+                                </motion.button>
+                              </>
+                            ) : (
+                              <>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleEditSale(sale)}
+                                  className="p-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-white shadow-sm transition-colors"
+                                  title="Wax ka beddel iibka"
+                                >
+                                  <FiEdit className="h-4 w-4" />
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleDeleteSale(sale._id)}
+                                  className="p-2 bg-red-500 hover:bg-red-600 rounded-lg text-white shadow-sm transition-colors"
+                                  title="Tirtir iibka"
+                                >
+                                  <FiTrash2 className="h-4 w-4" />
+                                </motion.button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -387,7 +463,7 @@ const DailySales = () => {
               className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200"
             >
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Wadarta Iibka Maanta</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
                 <div className="text-center">
                   <p className="text-gray-600 text-sm">Wadarta Iibka</p>
                   <p className="text-xl font-bold text-emerald-600">${totalSales.toFixed(2)}</p>
@@ -399,6 +475,10 @@ const DailySales = () => {
                 <div className="text-center">
                   <p className="text-gray-600 text-sm">Tirada Iibka</p>
                   <p className="text-xl font-bold text-purple-600">{filteredSales.length}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-gray-600 text-sm">Wadarta Faaiidada</p>
+                  <p className="text-xl font-bold text-amber-600">${totalProfit.toFixed(2)}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-gray-600 text-sm">Qiimaha Dhexe</p>

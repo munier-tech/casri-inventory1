@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import useSalesStore from "../../store/UseSalesStore";
-import { FiCalendar, FiDollarSign, FiEdit, FiTrash2, FiRefreshCw, FiChevronDown, FiChevronUp, FiUser, FiPackage } from "react-icons/fi";
+import { FiCalendar, FiDollarSign, FiEdit, FiTrash2, FiRefreshCw, FiChevronDown, FiChevronUp, FiUser, FiPackage, FiTrendingUp } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 
@@ -30,6 +30,32 @@ const SalesByDate = () => {
     if (date) {
       fetchSalesByDate(date);
     }
+  };
+
+  // Calculate profit for a single sale
+  const calculateSaleProfit = (sale) => {
+    const productCost = sale.product?.cost || 0;
+    const sellingPrice = sale.sellingCost || sale.sellingPrice || 0;
+    const quantity = sale.quantity || 0;
+    
+    const profitPerUnit = sellingPrice - productCost;
+    const totalProfit = profitPerUnit * quantity;
+    
+    return {
+      profitPerUnit,
+      totalProfit,
+      profitMargin: sellingPrice > 0 ? (profitPerUnit / sellingPrice) * 100 : 0
+    };
+  };
+
+  // Calculate total profit for all sales
+  const calculateTotalProfit = () => {
+    if (!salesByDate?.sales) return 0;
+    
+    return salesByDate.sales.reduce((total, sale) => {
+      const profitData = calculateSaleProfit(sale);
+      return total + profitData.totalProfit;
+    }, 0);
   };
 
   const handleEdit = (sale) => {
@@ -98,6 +124,8 @@ const SalesByDate = () => {
 
   const totalSales = salesByDate?.total || 0;
   const salesCount = salesByDate?.sales?.length || 0;
+  const totalProfit = calculateTotalProfit();
+  const totalProfitMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -163,7 +191,7 @@ const SalesByDate = () => {
           >
             {/* Summary Card */}
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <p className="text-sm opacity-80">Wadarta Iibka</p>
                   <p className="text-3xl font-bold">${totalSales.toFixed(2)}</p>
@@ -171,6 +199,13 @@ const SalesByDate = () => {
                 <div className="text-center">
                   <p className="text-sm opacity-80">Tirada Iibka</p>
                   <p className="text-3xl font-bold">{salesCount}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm opacity-80">Wadarta Faaiidada</p>
+                  <p className="text-3xl font-bold">${totalProfit.toFixed(2)}</p>
+                  <p className="text-sm opacity-80 mt-1">
+                    {totalProfitMargin.toFixed(1)}% Faaiido
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm opacity-80">Celinta Celcelis ahaan</p>
@@ -187,146 +222,196 @@ const SalesByDate = () => {
 
             {/* Sales List */}
             <div className="space-y-4">
-              {salesByDate.sales.map((sale) => (
-                <motion.div
-                  key={sale._id}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div 
-                    className="p-5 cursor-pointer"
-                    onClick={() => toggleExpand(sale._id)}
+              {salesByDate.sales.map((sale) => {
+                const profitData = calculateSaleProfit(sale);
+                const productCost = sale.product?.cost || 0;
+                
+                return (
+                  <motion.div
+                    key={sale._id}
+                    className="bg-white rounded-2xl overflow-hidden shadow-lg"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-blue-100 p-3 rounded-xl">
-                          <FiPackage className="h-6 w-6 text-blue-600" />
+                    <div 
+                      className="p-5 cursor-pointer"
+                      onClick={() => toggleExpand(sale._id)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                          <div className="bg-blue-100 p-3 rounded-xl">
+                            <FiPackage className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-800">{sale.product?.name}</h3>
+                            <p className="text-sm text-gray-600">
+                              {sale.user?.username && (
+                                <span className="flex items-center">
+                                  <FiUser className="mr-1" /> {sale.user.username}
+                                </span>
+                              )}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-800">{sale.product?.name}</h3>
-                          <p className="text-sm text-gray-600">
-                            {sale.user?.username && (
-                              <span className="flex items-center">
-                                <FiUser className="mr-1" /> {sale.user.username}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-lg font-bold text-blue-600">
-                          ${sale.totalAmount.toFixed(2)}
-                        </span>
-                        {expandedSale === sale._id ? (
-                          <FiChevronUp className="h-5 w-5 text-gray-500" />
-                        ) : (
-                          <FiChevronDown className="h-5 w-5 text-gray-500" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <AnimatePresence>
-                    {expandedSale === sale._id && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="border-t border-gray-100"
-                      >
-                        <div className="p-5">
-                          {editingSale === sale._id ? (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Tirada
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={editQuantity}
-                                    onChange={(e) => setEditQuantity(parseInt(e.target.value))}
-                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Qiimaha ($)
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0.01"
-                                    step="0.01"
-                                    value={editSellingCost}
-                                    onChange={(e) => setEditSellingCost(parseFloat(e.target.value))}
-                                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex justify-end gap-3">
-                                <button
-                                  onClick={handleCancelEdit}
-                                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
-                                >
-                                  Jooji
-                                </button>
-                                <button
-                                  onClick={() => handleUpdate(sale._id)}
-                                  disabled={isSubmitting}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50"
-                                >
-                                  {isSubmitting ? "Ku kaynaya..." : "Kaydi"}
-                                </button>
-                              </div>
-                            </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <span className="text-lg font-bold text-blue-600 block">
+                              ${sale.totalAmount.toFixed(2)}
+                            </span>
+                            <span className={`text-sm font-medium ${
+                              profitData.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              ${profitData.totalProfit.toFixed(2)} Faaiido
+                            </span>
+                          </div>
+                          {expandedSale === sale._id ? (
+                            <FiChevronUp className="h-5 w-5 text-gray-500" />
                           ) : (
-                            <>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                                <div>
-                                  <p className="text-sm text-gray-500">Tirada</p>
-                                  <p className="font-medium">{sale.quantity}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-500">Qiimaha Iibka</p>
-                                  <p className="font-medium">${sale.sellingCost.toFixed(2)}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-500">Wadarta</p>
-                                  <p className="font-medium text-blue-600">${sale.totalAmount.toFixed(2)}</p>
-                                </div>
-                              </div>
-                              <div className="mb-4">
-                                <p className="text-sm text-gray-500">Taariikhda</p>
-                                <p className="font-medium">{formatDate(sale.createdAt)}</p>
-                              </div>
-                              <div className="flex justify-end gap-3">
-                                <button
-                                  onClick={() => handleEdit(sale)}
-                                  className="flex items-center px-4 py-2 bg-yellow-100 text-yellow-700 rounded-xl hover:bg-yellow-200"
-                                >
-                                  <FiEdit className="mr-2" />
-                                  Beddel
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(sale._id)}
-                                  className="flex items-center px-4 py-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200"
-                                >
-                                  <FiTrash2 className="mr-2" />
-                                  Masax
-                                </button>
-                              </div>
-                            </>
+                            <FiChevronDown className="h-5 w-5 text-gray-500" />
                           )}
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              ))}
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {expandedSale === sale._id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="border-t border-gray-100"
+                        >
+                          <div className="p-5">
+                            {editingSale === sale._id ? (
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Tirada
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={editQuantity}
+                                      onChange={(e) => setEditQuantity(parseInt(e.target.value))}
+                                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Qiimaha Iibka ($)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      min="0.01"
+                                      step="0.01"
+                                      value={editSellingCost}
+                                      onChange={(e) => setEditSellingCost(parseFloat(e.target.value))}
+                                      className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                                  <p className="text-sm text-amber-800 font-medium">
+                                    💡 Tusaale: Markaad wax ka beddesho, faaiidada ayaa si toos ah u cusboonaysanaysa
+                                  </p>
+                                </div>
+                                <div className="flex justify-end gap-3">
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50"
+                                  >
+                                    Jooji
+                                  </button>
+                                  <button
+                                    onClick={() => handleUpdate(sale._id)}
+                                    disabled={isSubmitting}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50"
+                                  >
+                                    {isSubmitting ? "Ku kaynaya..." : "Kaydi"}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+                                  <div>
+                                    <p className="text-sm text-gray-500">Tirada</p>
+                                    <p className="font-medium">{sale.quantity}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500">Qiimaha Alaabta</p>
+                                    <p className="font-medium">${productCost.toFixed(2)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500">Qiimaha Iibka</p>
+                                    <p className="font-medium">${sale.sellingCost.toFixed(2)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500">Wadarta</p>
+                                    <p className="font-medium text-blue-600">${sale.totalAmount.toFixed(2)}</p>
+                                  </div>
+                                </div>
+                                
+                                {/* Profit Details */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                                  <div className="text-center">
+                                    <p className="text-sm text-gray-500">Faaiidada Wadarta</p>
+                                    <p className={`text-lg font-bold ${
+                                      profitData.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                      ${profitData.totalProfit.toFixed(2)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-sm text-gray-500">Faaiidada Mid Kasta</p>
+                                    <p className={`font-medium ${
+                                      profitData.profitPerUnit >= 0 ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                      ${profitData.profitPerUnit.toFixed(2)}
+                                    </p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-sm text-gray-500">Miisaanka Faaiidada</p>
+                                    <p className={`font-medium ${
+                                      profitData.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                      {profitData.profitMargin.toFixed(1)}%
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="mb-4">
+                                  <p className="text-sm text-gray-500">Taariikhda</p>
+                                  <p className="font-medium">{formatDate(sale.createdAt)}</p>
+                                </div>
+                                <div className="flex justify-end gap-3">
+                                  <button
+                                    onClick={() => handleEdit(sale)}
+                                    className="flex items-center px-4 py-2 bg-yellow-100 text-yellow-700 rounded-xl hover:bg-yellow-200"
+                                  >
+                                    <FiEdit className="mr-2" />
+                                    Beddel
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(sale._id)}
+                                    className="flex items-center px-4 py-2 bg-red-100 text-red-700 rounded-xl hover:bg-red-200"
+                                  >
+                                    <FiTrash2 className="mr-2" />
+                                    Masax
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
         ) : salesByDate?.sales && salesByDate.sales.length === 0 ? (

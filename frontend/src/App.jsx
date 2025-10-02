@@ -80,7 +80,7 @@ const App = () => {
 
       <div className="relative z-10 pt-14 px-4 min-h-screen">
         <Routes>
-          <Route path="/" element={user ? <Dashboard /> : <Navigate to="/signin" />} />
+          <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/signin" />} />
           <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/dashboard" />} />
           <Route path="/signin" element={!user ? <SignIn /> : <Navigate to="/dashboard" />} />
           <Route path="/dashboard" element={user?.role === "admin" ? <Dashboard /> : <Navigate to="/dashboard" />} />

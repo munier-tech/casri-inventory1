@@ -22,6 +22,7 @@ const PurchaseManager = () => {
 
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     getAllPurchases();
@@ -71,23 +72,45 @@ const PurchaseManager = () => {
     purchase.supplierName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Sort purchases
+  const sortedPurchases = [...filteredPurchases].sort((a, b) => {
+    switch (sortBy) {
+      case "name":
+        return a.productName.localeCompare(b.productName);
+      case "quantity":
+        return b.quantity - a.quantity;
+      case "price":
+        return b.price - a.price;
+      case "total":
+        return (b.quantity * b.price) - (a.quantity * a.price);
+      case "newest":
+      default:
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    }
+  });
+
   // Calculate total value
   const totalValue = filteredPurchases.reduce((sum, purchase) => 
     sum + (purchase.quantity * purchase.price), 0
   );
 
+  // Calculate total quantity
+  const totalQuantity = filteredPurchases.reduce((sum, purchase) => 
+    sum + purchase.quantity, 0
+  );
+
   return (
-    <div className="min-h-screen bg-white p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Maamulka Iibka Casri Electronics</h1>
-          <p className="text-gray-600">Maamul  alaabta Meheradu soo Daymaysatey iyo kaydka</p>
+          <p className="text-gray-600">Maamul alaabta Meheradu soo Daymaysatey iyo kaydka</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center">
               <div className="bg-blue-100 p-3 rounded-lg">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,13 +118,13 @@ const PurchaseManager = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Wadarta ALaabta Meherada So daymaysatey</p>
+                <p className="text-sm font-medium text-gray-600">Wadarta Iibka</p>
                 <p className="text-2xl font-bold text-gray-900">{filteredPurchases.length}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center">
               <div className="bg-green-100 p-3 rounded-lg">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +138,7 @@ const PurchaseManager = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center">
               <div className="bg-purple-100 p-3 rounded-lg">
                 <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,20 +147,34 @@ const PurchaseManager = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Tirada Alaabta</p>
+                <p className="text-2xl font-bold text-gray-900">{totalQuantity.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center">
+              <div className="bg-orange-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Qiimaha Dhexdhexaadka</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {filteredPurchases.reduce((sum, purchase) => sum + purchase.quantity, 0)}
+                  ${filteredPurchases.length > 0 ? (totalValue / totalQuantity).toFixed(2) : "0.00"}
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Form Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">
-                {editingId ? "Wax ka beddel Iibka" : "Kudar Iib Cusub"}
+                {editingId ? "🔄 Wax ka beddel Iibka" : "➕ Kudar Iib Cusub"}
               </h2>
               {editingId && (
                 <button
@@ -151,9 +188,9 @@ const PurchaseManager = () => {
                       description: "",
                     });
                   }}
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="text-sm text-gray-500 hover:text-gray-700 bg-gray-100 px-3 py-1 rounded-lg transition duration-200"
                 >
-                  Jooji waxka-bedelka
+                  ❌ Jooji waxka-bedelka
                 </button>
               )}
             </div>
@@ -162,7 +199,7 @@ const PurchaseManager = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Magaca Alaabta
+                    📦 Magaca Alaabta
                   </label>
                   <input
                     type="text"
@@ -170,14 +207,14 @@ const PurchaseManager = () => {
                     value={formData.productName}
                     onChange={handleChange}
                     placeholder="Geli magaca alaabta"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Magaca Laga Soo daymaystey
+                    🏢 Magaca Laga Soo daymaystey
                   </label>
                   <input
                     type="text"
@@ -185,7 +222,7 @@ const PurchaseManager = () => {
                     value={formData.supplierName}
                     onChange={handleChange}
                     placeholder="Geli magaca Laga Soo Iibsadey"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     required
                   />
                 </div>
@@ -194,7 +231,7 @@ const PurchaseManager = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tiro (Quantity)
+                    🔢 Tiro (Quantity)
                   </label>
                   <input
                     type="number"
@@ -202,14 +239,14 @@ const PurchaseManager = () => {
                     value={formData.quantity}
                     onChange={handleChange}
                     min="1"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     required
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Qiimo ($)
+                    💰 Qiimo ($)
                   </label>
                   <input
                     type="number"
@@ -219,7 +256,7 @@ const PurchaseManager = () => {
                     placeholder="0.00"
                     step="0.01"
                     min="0"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     required
                   />
                 </div>
@@ -227,7 +264,7 @@ const PurchaseManager = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sharaxaad
+                  📝 Sharaxaad
                 </label>
                 <textarea
                   name="description"
@@ -235,14 +272,14 @@ const PurchaseManager = () => {
                   onChange={handleChange}
                   placeholder="Sharaxaad ku saabsan alaabta..."
                   rows="3"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 transform hover:scale-[1.02]"
               >
                 {loading ? (
                   <span className="flex items-center justify-center">
@@ -253,9 +290,9 @@ const PurchaseManager = () => {
                     {editingId ? "La diiwaan gelineyno..." : "La diiwaan gelineyno..."}
                   </span>
                 ) : editingId ? (
-                  "Update Iibka"
+                  "💾 Update Iibka"
                 ) : (
-                  "Keydso Iibka"
+                  "💾 Keydso Iibka"
                 )}
               </button>
             </form>
@@ -267,25 +304,39 @@ const PurchaseManager = () => {
           </div>
 
           {/* List Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-3 sm:space-y-0">
-              <h2 className="text-xl font-bold text-gray-800">Liiska Deymaha Meherada</h2>
+          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-3 lg:space-y-0">
+              <h2 className="text-xl font-bold text-gray-800">📋 Liiska Deymaha Meherada</h2>
               
-              <div className="relative w-full sm:w-64">
-                <input
-                  type="text"
-                  placeholder="Raadi alaabta ama iibsaha..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                <div className="relative w-full sm:w-64">
+                  <input
+                    type="text"
+                    placeholder="🔍 Raadi alaabta ama iibsaha..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                  />
+                  <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full sm:w-40 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                >
+                  <option value="newest">🆕 Ugu Cusub</option>
+                  <option value="name">🔤 Magaca</option>
+                  <option value="quantity">📊 Tiro</option>
+                  <option value="price">💰 Qiimo</option>
+                  <option value="total">💵 Wadarta</option>
+                </select>
               </div>
             </div>
 
-            {filteredPurchases.length === 0 ? (
+            {sortedPurchases.length === 0 ? (
               <div className="text-center py-12">
                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -296,42 +347,39 @@ const PurchaseManager = () => {
                 )}
               </div>
             ) : (
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {filteredPurchases.map((purchase) => (
-                  <div key={purchase._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-semibold text-gray-800 text-lg">
-                            {purchase.productName}
+              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                {sortedPurchases.map((purchase, index) => (
+                  <div 
+                    key={purchase._id} 
+                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-300 bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-white"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-blue-100 text-blue-800 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-800 text-lg">
+                            Magaca Alaabta : {purchase.productName}
                           </h3>
-                          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                            Tiro: {purchase.quantity}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            <span>Iibsade "Supplier": {purchase.supplierName}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                            </svg>
-                            <span>Qiimo: ${purchase.price}</span>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
+                              🏷️ Tiro: {purchase.quantity}
+                            </span>
+                            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                              💰 Qiimo: ${purchase.price}
+                            </span>
+                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
+                              💵 Wadarta: ${(purchase.quantity * purchase.price).toLocaleString()}
+                            </span>
                           </div>
                         </div>
-                        {purchase.description && (
-                          <p className="text-gray-500 text-sm mt-2">{purchase.description}</p>
-                        )}
                       </div>
                       
-                      <div className="flex space-x-2 ml-4">
+                      <div className="flex space-x-2">
                         <button
                           onClick={() => handleEdit(purchase)}
-                          className="bg-yellow-100 text-yellow-700 p-2 rounded-lg hover:bg-yellow-200 transition duration-200"
+                          className="bg-yellow-100 text-yellow-700 p-2 rounded-lg hover:bg-yellow-200 transition duration-200 transform hover:scale-110"
                           title="Wax ka beddel"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,7 +388,7 @@ const PurchaseManager = () => {
                         </button>
                         <button
                           onClick={() => handleDelete(purchase._id)}
-                          className="bg-red-100 text-red-700 p-2 rounded-lg hover:bg-red-200 transition duration-200"
+                          className="bg-red-100 text-red-700 p-2 rounded-lg hover:bg-red-200 transition duration-200 transform hover:scale-110"
                           title="Tirtir"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -350,14 +398,31 @@ const PurchaseManager = () => {
                       </div>
                     </div>
                     
-                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
-                      <span className="text-xs text-gray-400">
-                        ID: {purchase._id.slice(-6)}
-                      </span>
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                        Wadarta: ${(purchase.quantity * purchase.price).toLocaleString()}
-                      </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8  text-sm text-gray-800">
+                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <div>
+                          <span className="font-semibold text-gray-700">Magaca Cida Daynta Leh:</span>
+                          <span className="ml-2 font-bold text-green-500">{purchase.supplierName}</span>
+                        </div>
+                      </div>
+                      
+                      
                     </div>
+
+                    {purchase.description && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="flex items-start space-x-2">
+                          <span className="text-blue-600 mt-0.5">📝</span>
+                          <div>
+                            <span className="text-sm font-medium text-blue-800">Sharaxaad:</span>
+                            <p className="text-sm text-blue-700 mt-1">{purchase.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
