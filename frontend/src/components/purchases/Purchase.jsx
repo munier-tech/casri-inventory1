@@ -17,6 +17,7 @@ const PurchaseManager = () => {
     supplierName: "",
     quantity: 1,
     price: "",
+    additionalPrice: "",
     description: "",
   });
 
@@ -29,22 +30,43 @@ const PurchaseManager = () => {
   }, [getAllPurchases]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ 
+      ...formData, 
+      [name]: value 
+    });
+  };
+
+  // Calculate total based on quantity and price
+  const calculateTotal = () => {
+    const quantity = Number(formData.quantity) || 0;
+    const price = Number(formData.price) || 0;
+    const additionalPrice = Number(formData.additionalPrice) || 0;
+    return (quantity * price) + additionalPrice;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    const submitData = {
+      ...formData,
+      total: calculateTotal(),
+      additionalPrice: formData.additionalPrice || "0"
+    };
+
     if (editingId) {
-      await updatePurchase(editingId, formData);
+      await updatePurchase(editingId, submitData);
       setEditingId(null);
     } else {
-      await addPurchase(formData);
+      await addPurchase(submitData);
     }
+    
     setFormData({
       productName: "",
       supplierName: "",
       quantity: 1,
       price: "",
+      additionalPrice: "",
       description: "",
     });
   };
@@ -56,6 +78,7 @@ const PurchaseManager = () => {
       supplierName: purchase.supplierName,
       quantity: purchase.quantity,
       price: purchase.price,
+      additionalPrice: purchase.additionalPrice || "",
       description: purchase.description,
     });
   };
@@ -74,6 +97,9 @@ const PurchaseManager = () => {
 
   // Sort purchases
   const sortedPurchases = [...filteredPurchases].sort((a, b) => {
+    const totalA = (a.quantity * a.price) + (Number(a.additionalPrice) || 0);
+    const totalB = (b.quantity * b.price) + (Number(b.additionalPrice) || 0);
+    
     switch (sortBy) {
       case "name":
         return a.productName.localeCompare(b.productName);
@@ -82,21 +108,28 @@ const PurchaseManager = () => {
       case "price":
         return b.price - a.price;
       case "total":
-        return (b.quantity * b.price) - (a.quantity * a.price);
+        return totalB - totalA;
       case "newest":
       default:
         return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     }
   });
 
-  // Calculate total value
-  const totalValue = filteredPurchases.reduce((sum, purchase) => 
-    sum + (purchase.quantity * purchase.price), 0
-  );
+  // Calculate total value including additional prices
+  const totalValue = filteredPurchases.reduce((sum, purchase) => {
+    const baseTotal = purchase.quantity * purchase.price;
+    const additional = Number(purchase.additionalPrice) || 0;
+    return sum + baseTotal + additional;
+  }, 0);
 
   // Calculate total quantity
   const totalQuantity = filteredPurchases.reduce((sum, purchase) => 
     sum + purchase.quantity, 0
+  );
+
+  // Calculate total additional price
+  const totalAdditionalPrice = filteredPurchases.reduce((sum, purchase) => 
+    sum + (Number(purchase.additionalPrice) || 0), 0
   );
 
   return (
@@ -160,9 +193,9 @@ const PurchaseManager = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Qiimaha Dhexdhexaadka</p>
+                <p className="text-sm font-medium text-gray-600">Qiimo Gudaha</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  ${filteredPurchases.length > 0 ? (totalValue / totalQuantity).toFixed(2) : "0.00"}
+                  ${totalAdditionalPrice.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -185,6 +218,7 @@ const PurchaseManager = () => {
                       supplierName: "",
                       quantity: 1,
                       price: "",
+                      additionalPrice: "",
                       description: "",
                     });
                   }}
@@ -228,7 +262,7 @@ const PurchaseManager = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     🔢 Tiro (Quantity)
@@ -259,6 +293,35 @@ const PurchaseManager = () => {
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ➕ Qiimo Cusub ($)
+                  </label>
+                  <input
+                    type="number"
+                    name="additionalPrice"
+                    value={formData.additionalPrice}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
+                  />
+                </div>
+              </div>
+
+              {/* Total Display */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-blue-800">Wadarta Qiimaha:</span>
+                  <span className="text-xl font-bold text-blue-900">
+                    ${calculateTotal().toLocaleString()}
+                  </span>
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  (Tiro × Qiimo) + Qiimo Cusub = ${calculateTotal().toLocaleString()}
                 </div>
               </div>
 
@@ -348,83 +411,102 @@ const PurchaseManager = () => {
               </div>
             ) : (
               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                {sortedPurchases.map((purchase, index) => (
-                  <div 
-                    key={purchase._id} 
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-300 bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-white"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-blue-100 text-blue-800 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-gray-800 text-lg">
-                            Magaca Alaabta : {purchase.productName}
-                          </h3>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
-                              🏷️ Tiro: {purchase.quantity}
-                            </span>
-                            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                              💰 Qiimo: ${purchase.price}
-                            </span>
-                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
-                              💵 Wadarta: ${(purchase.quantity * purchase.price).toLocaleString()}
-                            </span>
+                {sortedPurchases.map((purchase, index) => {
+                  const baseTotal = purchase.quantity * purchase.price;
+                  const additionalPrice = Number(purchase.additionalPrice) || 0;
+                  const finalTotal = baseTotal + additionalPrice;
+                  
+                  return (
+                    <div 
+                      key={purchase._id} 
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-300 bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-white"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-blue-100 text-blue-800 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+                            {index + 1}
                           </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(purchase)}
-                          className="bg-yellow-100 text-yellow-700 p-2 rounded-lg hover:bg-yellow-200 transition duration-200 transform hover:scale-110"
-                          title="Wax ka beddel"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(purchase._id)}
-                          className="bg-red-100 text-red-700 p-2 rounded-lg hover:bg-red-200 transition duration-200 transform hover:scale-110"
-                          title="Tirtir"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8  text-sm text-gray-800">
-                      <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        <div>
-                          <span className="font-semibold text-gray-700">Magaca Cida Daynta Leh:</span>
-                          <span className="ml-2 font-bold text-green-500">{purchase.supplierName}</span>
-                        </div>
-                      </div>
-                      
-                      
-                    </div>
-
-                    {purchase.description && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                        <div className="flex items-start space-x-2">
-                          <span className="text-blue-600 mt-0.5">📝</span>
                           <div>
-                            <span className="text-sm font-medium text-blue-800">Sharaxaad:</span>
-                            <p className="text-sm text-blue-700 mt-1">{purchase.description}</p>
+                            <h3 className="font-bold text-gray-800 text-lg">
+                              Magaca Alaabta : {purchase.productName}
+                            </h3>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
+                                🏷️ Tiro: {purchase.quantity}
+                              </span>
+                              <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                                💰 Qiimo: ${purchase.price}
+                              </span>
+                              {additionalPrice > 0 && (
+                                <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium">
+                                  ➕ Gudaha: ${additionalPrice}
+                                </span>
+                              )}
+                              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
+                                💵 Wadarta: ${finalTotal.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEdit(purchase)}
+                            className="bg-yellow-100 text-yellow-700 p-2 rounded-lg hover:bg-yellow-200 transition duration-200 transform hover:scale-110"
+                            title="Wax ka beddel"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(purchase._id)}
+                            className="bg-red-100 text-red-700 p-2 rounded-lg hover:bg-red-200 transition duration-200 transform hover:scale-110"
+                            title="Tirtir"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm text-gray-800">
+                        <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <div>
+                            <span className="font-semibold text-gray-700">Magaca Cida Daynta Leh:</span>
+                            <span className="ml-2 font-bold text-green-500">{purchase.supplierName}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg">
+                          <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          <div>
+                            <span className="font-semibold text-blue-700">Asal ahaan:</span>
+                            <span className="ml-2 font-bold text-blue-900">${baseTotal.toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {purchase.description && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                          <div className="flex items-start space-x-2">
+                            <span className="text-blue-600 mt-0.5">📝</span>
+                            <div>
+                              <span className="text-sm font-medium text-blue-800">Sharaxaad:</span>
+                              <p className="text-sm text-blue-700 mt-1">{purchase.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

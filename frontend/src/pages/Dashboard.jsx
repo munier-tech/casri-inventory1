@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Home,
@@ -16,17 +16,27 @@ import {
   Package,
   CreditCard,
   Users,
+  LogOut,
+  UserPlus,
+  LogIn,
+  Loader,
+  DollarSign,
+  User,
+  ChevronDown,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import useProductsStore from "../store/useProductsStore";
-import { useEffect } from "react";
 import useSalesStore from "../store/UseSalesStore";
+import { useUserStore } from "../store/useUserStore";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [expandedTabs, setExpandedTabs] = useState({});
   const [language, setLanguage] = useState("so");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  const { user, isLoading, dashboardAdmin, signOut } = useUserStore();
+  const { products, fetchProducts } = useProductsStore();
 
   const toggleTabExpansion = (tabId) => {
     setExpandedTabs((prev) => ({
@@ -34,6 +44,20 @@ const Dashboard = () => {
       [tabId]: !prev[tabId],
     }));
   };
+
+  const handleLogout = () => {
+    signOut();
+    setUserMenuOpen(false);
+  };
+
+  const lowOrSoldCount = Array.isArray(products)
+    ? products.reduce((acc, p) => {
+        const threshold = Number(p.lowStockThreshold ?? 5);
+        const stock = Number(p.stock ?? 0);
+        if (stock <= 0 || stock <= threshold) return acc + 1;
+        return acc;
+      }, 0)
+    : 0;
 
   const content = {
     so: {
@@ -78,6 +102,10 @@ const Dashboard = () => {
       productsDesc: "Maareynta alaabta iyo bakhaarka",
       stats: "Tirakoobka",
       quickActions: "Ficilada Degdegga ah",
+      logout: "Ka Bax",
+      login: "Login",
+      signup: "Sign Up",
+      inventory: "CASRI INVENTORY",
     },
     en: {
       dashboard: "Dashboard",
@@ -105,7 +133,7 @@ const Dashboard = () => {
         productList: "Product List",
         dailySales: "Daily Sales",
         salesByDate: "Sales by Date",
-        Sale : "Add New Sale",
+        Sale: "Add New Sale",
         userDailySales: "User Daily Sales",
         userSalesByDate: "User Sales by Date",
         financialLog: "Financial Log",
@@ -120,6 +148,10 @@ const Dashboard = () => {
       productsDesc: "Manage your products and inventory",
       stats: "Statistics",
       quickActions: "Quick Actions",
+      logout: "Logout",
+      login: "Login",
+      signup: "Sign Up",
+      inventory: "CASRI INVENTORY",
     },
   };
 
@@ -186,7 +218,7 @@ const Dashboard = () => {
       subtabs: [
         {
           id: "create",
-          label: content[language].subtabs.createCategory,
+          label: content[language].subtabs.CreatePurchases,
           icon: PlusCircle,
           path: "/purchases",
         },
@@ -195,8 +227,8 @@ const Dashboard = () => {
     {
       id: "loans",
       label: content[language].tabs.Loans,
-      icon: ShoppingBasket,
-      color: "text-purple-600",
+      icon: DollarSign,
+      color: "text-yellow-600",
       subtabs: [
         {
           id: "get",
@@ -265,7 +297,7 @@ const Dashboard = () => {
           path: "/reports",
         },
         {
-          id: "get",
+          id: "yearly",
           label: content[language].subtabs.GetYearlyReports,
           icon: PlusCircle,
           path: "/yearlyreports",
@@ -297,9 +329,10 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-white text-gray-800">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <motion.h1
+        {/* Top Bar with Logo and User Menu */}
+        <div className="flex justify-between items-center mb-8">
+          {/* Logo */}
+           <motion.h1
             className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -307,23 +340,110 @@ const Dashboard = () => {
           >
             {content[language].dashboard}
           </motion.h1>
-
-          {/* Language Selector */}
-          <motion.div
-            className="flex items-center space-x-2 bg-gray-50 rounded-xl p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Globe size={18} className="text-blue-600" />
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="bg-transparent text-gray-700 focus:outline-none font-medium"
+        
+          {/* User Menu */}
+          <div className="flex items-center gap-4">
+            {/* Language Selector */}
+            <motion.div
+              className="flex items-center space-x-2 bg-gray-50 rounded-xl p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <option value="so">Somali</option>
-              <option value="en">English</option>
-            </select>
-          </motion.div>
+              <Globe size={18} className="text-blue-600" />
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="bg-transparent text-gray-700 focus:outline-none font-medium"
+              >
+                <option value="so">Somali</option>
+                <option value="en">English</option>
+              </select>
+            </motion.div>
+
+            {/* User Dropdown */}
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User size={16} className="text-blue-600" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-medium font-bold text-gray-900">
+                      {user.username[0].toUpperCase() + user.username.slice(1)}
+                    </p>
+                   
+                  </div>
+                  <ChevronDown 
+                    size={16} 
+                    className={`text-gray-400 transition-transform ${
+                      userMenuOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {/* User Menu Dropdown */}
+                <AnimatePresence>
+                  {userMenuOpen && (
+                    <motion.div
+                      className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {/* User Info */}
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.username}
+                        </p>
+                        <p className="text-xs text-gray-500 bg-violet-500 p-1 text-white rounded-md font-bold w-12">
+                      {user.role[0].toUpperCase() + user.role.slice(1)}
+                    </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                      
+                      {/* Logout Button */}
+                      <button
+                        onClick={handleLogout}
+                        disabled={isLoading}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
+                      >
+                        {isLoading ? (
+                          <Loader className="animate-spin" size={16} />
+                        ) : (
+                          <LogOut size={16} />
+                        )}
+                        <span>{content[language].logout}</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/signup"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors"
+                >
+                  <UserPlus className="mr-1" size={18} />
+                  <span>{content[language].signup}</span>
+                </Link>
+
+                <Link
+                  to="/signin"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                >
+                  <LogIn className="mr-1" size={18} />
+                  <span>{content[language].login}</span>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -422,16 +542,16 @@ const Dashboard = () => {
 const DashboardContent = ({ language }) => {
   const navigate = useNavigate();
 
-  const { products , fetchProducts } = useProductsStore();
-  const { sales , fetchSales } = useSalesStore();
+  const { products, fetchProducts } = useProductsStore();
+  const { sales, fetchSales } = useSalesStore();
 
   useEffect(() => {
     fetchProducts();
-  } , [fetchProducts])
-  
+  }, [fetchProducts]);
+
   useEffect(() => {
     fetchSales();
-  } , [fetchSales])
+  }, [fetchSales]);
 
   const stats = [
     {

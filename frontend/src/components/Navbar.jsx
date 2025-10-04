@@ -63,13 +63,13 @@ const Navbar = () => {
                   <Boxes className="mr-1" size={18} />
                   <span className="hidden sm:inline">Qolka Alaabta</span>
                   {lowOrSoldCount > 0 && (
-                    <span className="ml-2 text-xs text-white text-white bg-rose-600 rounded-full px-2 py-0.5">{lowOrSoldCount}</span>
+                    <span className="ml-2 text-xs text-white bg-rose-600 rounded-full px-2 py-0.5">{lowOrSoldCount}</span>
                   )}
                 </Link>
 
                 <Link
                   to="/loans"
-                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-black hover:bg-white/10 transition-colors"
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-bold text hover:bg-white/10 transition-colors"
                 >
                   <DollarSign className="mr-1" size={18} />
                   <span className="hidden sm:inline">Deynta</span>
