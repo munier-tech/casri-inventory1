@@ -26,25 +26,24 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center cursor-pointer">
-            <Link to="/" className="flex flex-col">
+            <div className="flex flex-col">
               <h1 className="text-2xl font-bold bg-white text-black bg-clip-text">
                 CASRI
               </h1>
               <p className="text-2xl font-bold bg-white text-black bg-clip-text -mt-2">
                 INVENTORY
               </p>
-            </Link>
+            </div>
           </div>
 
           {/* Navigation Links */}
           <nav className="flex items-center space-x-2 sm:space-x-4">
-            <Link
-              to="/"
+            <div
               className="hidden items-center px-3 py-2 rounded-lg text-sm font-medium text-black hover:bg-white/10 transition-colors"
             >
               <Home className="mr-1" size={18} />
               <span className="hidden sm:inline">bogga hore</span>
-            </Link>
+            </div>
 
             {user && dashboardAdmin() && (
               <>
