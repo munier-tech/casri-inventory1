@@ -23,6 +23,8 @@ import useProductsStore from './store/useProductsStore';
 import GetMonthlyReport from './components/reports/getMonthlyReports';
 import GetYearlyReport from './components/reports/getYearlyReports';
 import PurchaseManager from './components/purchases/Purchase';
+import NotFound from './pages/NotFoundPage';
+import AccessDenied from './pages/AccessDeniedPage';
 
 const App = () => {
   const { checkAuth, user, isLoading, authChecked } = useUserStore();
@@ -80,25 +82,175 @@ const App = () => {
 
       <div className="relative z-10 pt-14 px-4 min-h-screen">
         <Routes>
-          <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/signin" />} />
+          {/* Public Routes */}
           <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/dashboard" />} />
           <Route path="/signin" element={!user ? <SignIn /> : <Navigate to="/dashboard" />} />
-          <Route path="/dashboard" element={user?.role === "admin" ? <Dashboard /> : <Navigate to="/dashboard" />} />
-          <Route path="/FinancialLogForm" element={user?.role === "admin" ? <FinancialLogForm /> : <Navigate to="/dashboard" />} />
-          <Route path="/AddSale" element={user?.role === "admin" ? <CreateSale /> : <Navigate to="/dashboard" />} />
-          <Route path="/createProduct" element={user?.role === "admin" ? <CreateProduct /> : <Navigate to="/dashboard" />} />
-          <Route path="/reports" element={user?.role === "admin" ? <GetMonthlyReport /> : <Navigate to="/dashboard" />} />
-          <Route path="/yearlyreports" element={user?.role === "admin" ? <GetYearlyReport /> : <Navigate to="/dashboard" />} />
-          <Route path="/purchases" element={user?.role === "admin" ? <PurchaseManager /> : <Navigate to="/dashboard" />} />
-          <Route path="/products" element={user?.role === "admin" ? <GetProducts /> : <Navigate to="/dashboard" />} />
-          <Route path="/DailySales" element={user?.role === "admin" ? <DailySales /> : <Navigate to="/dashboard" />} />
-          <Route path="/HistorySalesDate" element={user?.role === "admin" ? <SalesByDate /> : <Navigate to="/dashboard" />} />
-          <Route path="/UserDailySales" element={user?.role === "admin" ? <GetAllUsersDailySales /> : <Navigate to="/dashboard" />} />
-          <Route path="/UserProductsByDate" element={user?.role === "admin" ? <GetAllUsersSalesByDate /> : <Navigate to="/dashboard" />} />
-          <Route path="/stock" element={user?.role === "admin" ? <Stock /> : <Navigate to="/dashboard" />} />
-          <Route path="/categories" element={user?.role === "admin" ? <Categories /> : <Navigate to="/dashboard" />} />
-          <Route path="/loans" element={user?.role === "admin" ? <LoanManagement /> : <Navigate to="/dashboard" />} />
-          <Route path="/FinancialLogDate" element={user?.role === "admin" ? <FinancialLogDate /> : <Navigate to="/dashboard" />} />
+          
+          {/* Protected Routes - Admin Only */}
+          <Route 
+            path="/dashboard" 
+            element={
+              user ? (
+                user.role === "admin" ? <Dashboard /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/FinancialLogForm" 
+            element={
+              user ? (
+                user.role === "admin" ? <FinancialLogForm /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/AddSale" 
+            element={
+              user ? (
+                user.role === "admin" ? <CreateSale /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/createProduct" 
+            element={
+              user ? (
+                user.role === "admin" ? <CreateProduct /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/reports" 
+            element={
+              user ? (
+                user.role === "admin" ? <GetMonthlyReport /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/yearlyreports" 
+            element={
+              user ? (
+                user.role === "admin" ? <GetYearlyReport /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/purchases" 
+            element={
+              user ? (
+                user.role === "admin" ? <PurchaseManager /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/products" 
+            element={
+              user ? (
+                user.role === "admin" ? <GetProducts /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/DailySales" 
+            element={
+              user ? (
+                user.role === "admin" ? <DailySales /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/HistorySalesDate" 
+            element={
+              user ? (
+                user.role === "admin" ? <SalesByDate /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/UserDailySales" 
+            element={
+              user ? (
+                user.role === "admin" ? <GetAllUsersDailySales /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/UserProductsByDate" 
+            element={
+              user ? (
+                user.role === "admin" ? <GetAllUsersSalesByDate /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/stock" 
+            element={
+              user ? (
+                user.role === "admin" ? <Stock /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/categories" 
+            element={
+              user ? (
+                user.role === "admin" ? <Categories /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/loans" 
+            element={
+              user ? (
+                user.role === "admin" ? <LoanManagement /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          <Route 
+            path="/FinancialLogDate" 
+            element={
+              user ? (
+                user.role === "admin" ? <FinancialLogDate /> : <AccessDenied />
+              ) : (
+                <Navigate to="/signin" />
+              )
+            } 
+          />
+          
+          {/* Fallback Routes */}
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/*" element={<NotFound />} />
         </Routes>
       </div>
       <Toaster position="top-center" />

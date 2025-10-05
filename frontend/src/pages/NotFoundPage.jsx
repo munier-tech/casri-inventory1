@@ -6,7 +6,7 @@ import { AlertTriangle } from "lucide-react";
 const NotFound = () => {
   return (
     <motion.div
-      className="flex items-center justify-center min-h-screen bg-gradient-to-tr from-amber-200 via-violet-600 to-sky-900"
+      className="flex items-center justify-center min-h-screen bg-gray-100"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
@@ -18,7 +18,7 @@ const NotFound = () => {
           The page you are looking for does not exist.
         </p>
         <Link
-          to="/"
+          to="/dashboard"
           className="px-6 py-2 text-white bg-emerald-500 hover:bg-emerald-600 transition duration-300 rounded-md"
         >
           Go Back Home
