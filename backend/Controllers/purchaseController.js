@@ -7,7 +7,7 @@ import Purchase from "../models/purchaseModel.js";
  */
 export const addPurchase = async (req, res) => {
   try {
-    const { productName, supplierName, price, quantity } = req.body || {};
+    const { productName, supplierName, price, quantity, additionalPrice, description, total } = req.body || {};
     const userId = req.user._id;
 
     if (!productName || !supplierName || price === undefined || quantity === undefined) {
@@ -16,6 +16,8 @@ export const addPurchase = async (req, res) => {
 
     const parsedQuantity = parseInt(quantity, 10);
     const parsedPrice = parseFloat(price);
+    const parsedAdditionalPrice = additionalPrice ? parseFloat(additionalPrice) : 0;
+    const parsedTotal = total ? parseFloat(total) : (parsedQuantity * parsedPrice) + parsedAdditionalPrice;
 
     if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
       return res.status(400).json({ message: "Quantity must be a positive number." });
@@ -23,12 +25,18 @@ export const addPurchase = async (req, res) => {
     if (isNaN(parsedPrice) || parsedPrice < 0) {
       return res.status(400).json({ message: "Price must be a non-negative number." });
     }
+    if (isNaN(parsedAdditionalPrice) || parsedAdditionalPrice < 0) {
+      return res.status(400).json({ message: "Additional price must be a non-negative number." });
+    }
 
     const newPurchase = new Purchase({
       productName,
       supplierName,
       price: parsedPrice,
       quantity: parsedQuantity,
+      additionalPrice: parsedAdditionalPrice,
+      description: description || "",
+      total: parsedTotal,
       user: userId,
       datePurchased: dayjs().toDate(),
     });
@@ -93,7 +101,7 @@ export const getDailyPurchases = async (req, res) => {
 export const updatePurchase = async (req, res) => {
   try {
     const { id } = req.params;
-    const { productName, supplierName, price, quantity, datePurchased } = req.body || {};
+    const { productName, supplierName, price, quantity, additionalPrice, description, total, datePurchased } = req.body || {};
 
     const purchase = await Purchase.findById(id);
     if (!purchase) {
@@ -108,6 +116,7 @@ export const updatePurchase = async (req, res) => {
     // Validate and set fields if provided
     if (productName !== undefined) purchase.productName = productName;
     if (supplierName !== undefined) purchase.supplierName = supplierName;
+    if (description !== undefined) purchase.description = description;
 
     if (price !== undefined) {
       const parsedPrice = parseFloat(price);
@@ -123,6 +132,26 @@ export const updatePurchase = async (req, res) => {
         return res.status(400).json({ message: "Quantity must be a positive number." });
       }
       purchase.quantity = parsedQuantity;
+    }
+
+    if (additionalPrice !== undefined) {
+      const parsedAdditionalPrice = parseFloat(additionalPrice);
+      if (isNaN(parsedAdditionalPrice) || parsedAdditionalPrice < 0) {
+        return res.status(400).json({ message: "Additional price must be a non-negative number." });
+      }
+      purchase.additionalPrice = parsedAdditionalPrice;
+    }
+
+    if (total !== undefined) {
+      const parsedTotal = parseFloat(total);
+      if (isNaN(parsedTotal) || parsedTotal < 0) {
+        return res.status(400).json({ message: "Total must be a non-negative number." });
+      }
+      purchase.total = parsedTotal;
+    } else {
+      // Auto-calculate total if not provided
+      const calculatedTotal = (purchase.quantity * purchase.price) + (purchase.additionalPrice || 0);
+      purchase.total = calculatedTotal;
     }
 
     if (datePurchased !== undefined) {

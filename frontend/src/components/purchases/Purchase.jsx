@@ -24,6 +24,7 @@ const PurchaseManager = () => {
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     getAllPurchases();
@@ -39,28 +40,81 @@ const PurchaseManager = () => {
 
   // Calculate total based on quantity and price
   const calculateTotal = () => {
-    const quantity = Number(formData.quantity) || 0;
-    const price = Number(formData.price) || 0;
-    const additionalPrice = Number(formData.additionalPrice) || 0;
+    const quantity = parseInt(formData.quantity) || 0;
+    const price = parseFloat(formData.price) || 0;
+    const additionalPrice = parseFloat(formData.additionalPrice) || 0;
     return (quantity * price) + additionalPrice;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Ensure all numbers are properly converted
     const submitData = {
-      ...formData,
+      productName: formData.productName.trim(),
+      supplierName: formData.supplierName.trim(),
+      quantity: parseInt(formData.quantity) || 1,
+      price: parseFloat(formData.price) || 0,
+      additionalPrice: formData.additionalPrice ? parseFloat(formData.additionalPrice) : 0,
+      description: formData.description.trim(),
       total: calculateTotal(),
-      additionalPrice: formData.additionalPrice || "0"
     };
 
-    if (editingId) {
-      await updatePurchase(editingId, submitData);
-      setEditingId(null);
-    } else {
-      await addPurchase(submitData);
+    console.log("Submitting data:", submitData);
+    console.log("Editing ID:", editingId);
+
+    try {
+      if (editingId) {
+        await updatePurchase(editingId, submitData);
+        setSuccessMessage("✅ Iibka si guul leh ayaa loo cusboonaysiiyay!");
+        setEditingId(null);
+        // Refresh purchases to ensure data is synced
+        await getAllPurchases();
+      } else {
+        await addPurchase(submitData);
+        setSuccessMessage("✅ Iibka cusub si guul leh ayaa loo diwaan geliyay!");
+      }
+      
+      // Reset form
+      setFormData({
+        productName: "",
+        supplierName: "",
+        quantity: 1,
+        price: "",
+        additionalPrice: "",
+        description: "",
+      });
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(""), 3000);
+      
+    } catch (err) {
+      console.error("Submit error:", err);
     }
-    
+  };
+
+  const handleEdit = (purchase) => {
+    console.log("Editing purchase:", purchase);
+    setEditingId(purchase._id);
+    setFormData({
+      productName: purchase.productName || "",
+      supplierName: purchase.supplierName || "",
+      quantity: purchase.quantity || 1,
+      price: purchase.price?.toString() || "",
+      additionalPrice: purchase.additionalPrice?.toString() || "",
+      description: purchase.description || "",
+    });
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Ma hubtaa inaad rabto inaad tirtirto iibkan?")) {
+      await deletePurchase(id);
+      await getAllPurchases(); // Refresh the list
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
     setFormData({
       productName: "",
       supplierName: "",
@@ -71,28 +125,10 @@ const PurchaseManager = () => {
     });
   };
 
-  const handleEdit = (purchase) => {
-    setEditingId(purchase._id);
-    setFormData({
-      productName: purchase.productName,
-      supplierName: purchase.supplierName,
-      quantity: purchase.quantity,
-      price: purchase.price,
-      additionalPrice: purchase.additionalPrice || "",
-      description: purchase.description,
-    });
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Ma hubtaa inaad rabto inaad tirtirto iibkan?")) {
-      await deletePurchase(id);
-    }
-  };
-
   // Filter purchases based on search term
   const filteredPurchases = purchases.filter(purchase =>
-    purchase.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    purchase.supplierName.toLowerCase().includes(searchTerm.toLowerCase())
+    purchase.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    purchase.supplierName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Sort purchases
@@ -124,7 +160,7 @@ const PurchaseManager = () => {
 
   // Calculate total quantity
   const totalQuantity = filteredPurchases.reduce((sum, purchase) => 
-    sum + purchase.quantity, 0
+    sum + (purchase.quantity || 0), 0
   );
 
   // Calculate total additional price
@@ -211,17 +247,8 @@ const PurchaseManager = () => {
               </h2>
               {editingId && (
                 <button
-                  onClick={() => {
-                    setEditingId(null);
-                    setFormData({
-                      productName: "",
-                      supplierName: "",
-                      quantity: 1,
-                      price: "",
-                      additionalPrice: "",
-                      description: "",
-                    });
-                  }}
+                  type="button"
+                  onClick={handleCancelEdit}
                   className="text-sm text-gray-500 hover:text-gray-700 bg-gray-100 px-3 py-1 rounded-lg transition duration-200"
                 >
                   ❌ Jooji waxka-bedelka
@@ -359,9 +386,18 @@ const PurchaseManager = () => {
                 )}
               </button>
             </form>
+
+            {/* Success Message */}
+            {successMessage && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-green-600 text-sm font-medium">{successMessage}</p>
+              </div>
+            )}
+
+            {/* Error Message */}
             {error && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
+                <p className="text-red-600 text-sm font-medium">{error}</p>
               </div>
             )}
           </div>

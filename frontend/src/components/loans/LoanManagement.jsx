@@ -15,10 +15,7 @@ import {
   Eye,
   CheckCircle,
   XCircle,
-  AlertTriangle,
-  Users,
-  Briefcase,
-  Star
+  AlertTriangle
 } from "lucide-react";
 import useLoanStore from "../../store/useLoanStore";
 
@@ -37,7 +34,6 @@ const LoanManagement = ({ language = "so" }) => {
     clearError
   } = useLoanStore();
 
-  const [activeTab, setActiveTab] = useState("family");
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
@@ -47,8 +43,7 @@ const LoanManagement = ({ language = "so" }) => {
     productName: "",
     amount: "",
     description: "",
-    quantity: 1,
-    loanType: "family"
+    quantity: 1
   });
   
   const [editFormData, setEditFormData] = useState({
@@ -56,8 +51,7 @@ const LoanManagement = ({ language = "so" }) => {
     productName: "",
     amount: "",
     description: "",
-    quantity: 1,
-    loanType: "family"
+    quantity: 1
   });
 
   const [filters, setFilters] = useState({
@@ -80,56 +74,69 @@ const LoanManagement = ({ language = "so" }) => {
     }
   }, [error, clearError]);
 
-  // Fixed: Handle legacy loans without loanType field
-  const filteredLoans = loans.filter(loan => {
-    // If loan doesn't have loanType, treat it based on active tab
-    if (!loan.loanType) {
-      // For legacy loans, you might want to assign them to a specific tab
-      // Here we'll show them in family loans tab by default, or you can adjust
-      return activeTab === "family"; // Show legacy loans in family tab
+  // Enhanced helper function to display creator's name
+  const getCreatorDisplayName = (createdBy) => {
+    if (!createdBy) {
+      console.log('createdBy is null or undefined');
+      return "Unknown";
     }
     
-    // For new loans with loanType field
-    if (activeTab === "family") return loan.loanType === "family";
-    if (activeTab === "clients") return loan.loanType === "clients";
-    if (activeTab === "special") return loan.loanType === "special";
-    return true;
-  });
-
-  // Calculate stats for each tab
-  const calculateTabStats = () => {
-    const tabLoans = filteredLoans;
-    const totalAmount = tabLoans.reduce((sum, loan) => sum + parseFloat(loan.amount || 0), 0);
-    const unpaidLoans = tabLoans.filter(loan => !loan.isPaid);
-    const unpaidAmount = unpaidLoans.reduce((sum, loan) => sum + parseFloat(loan.amount || 0), 0);
-    const paidLoans = tabLoans.filter(loan => loan.isPaid);
-    const paidAmount = paidLoans.reduce((sum, loan) => sum + parseFloat(loan.amount || 0), 0);
-
-    return {
-      totalLoans: tabLoans.length,
-      totalAmount,
-      unpaidLoans: unpaidLoans.length,
-      unpaidAmount,
-      paidLoans: paidLoans.length,
-      paidAmount
-    };
-  };
-
-  const tabStats = calculateTabStats();
-
-  const getCreatorDisplayName = (createdBy) => {
-    if (!createdBy) return "Unknown";
-    if (createdBy.username) return createdBy.username;
-    if (createdBy.userName) return createdBy.userName;
-    if (createdBy.user && createdBy.user.username) return createdBy.user.username;
-    if (createdBy.displayName) return createdBy.displayName;
-    if (createdBy.name) return createdBy.name;
-    if (createdBy.firstName && createdBy.lastName) return `${createdBy.firstName} ${createdBy.lastName}`;
-    if (createdBy.firstName) return createdBy.firstName;
-    if (createdBy.email) return createdBy.email.split('@')[0];
+    console.log('createdBy object:', createdBy);
+    console.log('Available fields:', Object.keys(createdBy));
+    
+    // Check for username (common field names)
+    if (createdBy.username) {
+      console.log('Using username:', createdBy.username);
+      return createdBy.username;
+    }
+    
+    // Check for user name fields (common variations)
+    if (createdBy.userName) {
+      console.log('Using userName:', createdBy.userName);
+      return createdBy.userName;
+    }
+    
+    if (createdBy.user && createdBy.user.username) {
+      console.log('Using user.username:', createdBy.user.username);
+      return createdBy.user.username;
+    }
+    
+    // Check for display name
+    if (createdBy.displayName) {
+      console.log('Using displayName:', createdBy.displayName);
+      return createdBy.displayName;
+    }
+    
+    // Check for name
+    if (createdBy.name) {
+      console.log('Using name:', createdBy.name);
+      return createdBy.name;
+    }
+    
+    // Check for first name + last name
+    if (createdBy.firstName && createdBy.lastName) {
+      const fullName = `${createdBy.firstName} ${createdBy.lastName}`;
+      console.log('Using firstName + lastName:', fullName);
+      return fullName;
+    }
+    
+    if (createdBy.firstName) {
+      console.log('Using firstName:', createdBy.firstName);
+      return createdBy.firstName;
+    }
+    
+    // Extract username from email (before @ symbol)
+    if (createdBy.email) {
+      const usernameFromEmail = createdBy.email.split('@')[0];
+      console.log('Extracted username from email:', usernameFromEmail);
+      return usernameFromEmail;
+    }
+    
+    console.log('No suitable field found, returning Unknown');
     return "Unknown";
   };
 
+  // Alternative function that extracts username from email
   const getUsernameFromEmail = (email) => {
     if (!email) return "Unknown";
     return email.split('@')[0];
@@ -151,8 +158,12 @@ const LoanManagement = ({ language = "so" }) => {
   };
 
   const applyFilters = () => {
-    const filterParams = { ...filters };
-    // Don't filter by loanType in backend to get all loans
+    const filterParams = {};
+    if (filters.isPaid !== "") filterParams.isPaid = filters.isPaid;
+    if (filters.personName) filterParams.personName = filters.personName;
+    if (filters.startDate) filterParams.startDate = filters.startDate;
+    if (filters.endDate) filterParams.endDate = filters.endDate;
+    
     fetchLoans(filterParams);
   };
 
@@ -172,27 +183,14 @@ const LoanManagement = ({ language = "so" }) => {
       return;
     }
     
-    // Fixed: Ensure loanType is included in the submission
-    const submitData = {
-      personName: formData.personName,
-      productName: formData.productName,
-      amount: parseFloat(formData.amount),
-      description: formData.description,
-      quantity: parseInt(formData.quantity) || 1,
-      loanType: formData.loanType // Make sure this is included
-    };
-    
-    console.log("Submitting loan:", submitData); // Debug log
-    
-    await createLoan(submitData);
+    await createLoan(formData);
     if (!error) {
       setFormData({
         personName: "",
         productName: "",
         amount: "",
         description: "",
-        quantity: 1,
-        loanType: activeTab // Reset to current active tab
+        quantity: 1
       });
       setIsCreating(false);
     }
@@ -200,16 +198,7 @@ const LoanManagement = ({ language = "so" }) => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    const updateData = {
-      personName: editFormData.personName,
-      productName: editFormData.productName,
-      amount: parseFloat(editFormData.amount),
-      description: editFormData.description,
-      quantity: parseInt(editFormData.quantity) || 1,
-      loanType: editFormData.loanType
-    };
-    
-    await updateLoan(editingId, updateData);
+    await updateLoan(editingId, editFormData);
     if (!error) {
       setEditingId(null);
       setEditFormData({
@@ -217,8 +206,7 @@ const LoanManagement = ({ language = "so" }) => {
         productName: "",
         amount: "",
         description: "",
-        quantity: 1,
-        loanType: "family"
+        quantity: 1
       });
     }
   };
@@ -230,8 +218,7 @@ const LoanManagement = ({ language = "so" }) => {
       productName: loan.productName,
       amount: loan.amount.toString(),
       description: loan.description || "",
-      quantity: loan.quantity || 1,
-      loanType: loan.loanType || "family" // Handle legacy loans
+      quantity: loan.quantity
     });
   };
 
@@ -242,8 +229,7 @@ const LoanManagement = ({ language = "so" }) => {
       productName: "",
       amount: "",
       description: "",
-      quantity: 1,
-      loanType: "family"
+      quantity: 1
     });
   };
 
@@ -271,8 +257,8 @@ const LoanManagement = ({ language = "so" }) => {
     }
   };
 
-  const formatCurrency = (amount) => `$${parseFloat(amount || 0).toFixed(2)}`;
-  const formatDate = (date) => date ? new Date(date).toLocaleDateString() : 'N/A';
+  const formatCurrency = (amount) => `$${parseFloat(amount).toFixed(2)}`;
+  const formatDate = (date) => new Date(date).toLocaleDateString();
 
   const content = {
     so: {
@@ -314,15 +300,7 @@ const LoanManagement = ({ language = "so" }) => {
       loanDate: "Taariikhda Deynta",
       paidDate: "Taariikhda Bixinta",
       createdBy: "Ku Abuuray",
-      status: "Xaalada",
-      familyLoans: "Deynta Qoyska",
-      clientsLoans: "Deynta Macaamiisha",
-      specialLoans: "Deynta Gaarka Ah",
-      familyTabDesc: "Deynta qoyska iyo ehelada",
-      clientsTabDesc: "Deynta macaamiisha ganacsiga",
-      specialTabDesc: "Deynta gaarka ah iyo maalgelin dheeraad ah",
-      loanTypeLabel: "Nooca Deynta",
-      legacyLoan: "Deyn Hore"
+      status: "Xaalada"
     },
     en: {
       title: "Loan Management",
@@ -363,37 +341,8 @@ const LoanManagement = ({ language = "so" }) => {
       loanDate: "Loan Date",
       paidDate: "Paid Date",
       createdBy: "Created By",
-      status: "Status",
-      familyLoans: "Family Loans",
-      clientsLoans: "Clients Loans",
-      specialLoans: "Special Loans",
-      familyTabDesc: "Loans for family members and relatives",
-      clientsTabDesc: "Business loans for clients and customers",
-      specialTabDesc: "Special loans and extended financing",
-      loanTypeLabel: "Loan Type",
-      legacyLoan: "Legacy Loan"
+      status: "Status"
     },
-  };
-
-  const tabConfig = {
-    family: {
-      icon: Users,
-      label: content[language].familyLoans,
-      description: content[language].familyTabDesc,
-      color: "blue"
-    },
-    clients: {
-      icon: Briefcase,
-      label: content[language].clientsLoans,
-      description: content[language].clientsTabDesc,
-      color: "emerald"
-    },
-    special: {
-      icon: Star,
-      label: content[language].specialLoans,
-      description: content[language].specialTabDesc,
-      color: "purple"
-    }
   };
 
   return (
@@ -445,39 +394,6 @@ const LoanManagement = ({ language = "so" }) => {
             </div>
           )}
 
-          {/* Tabs Navigation */}
-          <div className="border-b border-gray-200">
-            <div className="px-6">
-              <div className="flex space-x-8">
-                {Object.entries(tabConfig).map(([key, tab]) => {
-                  const IconComponent = tab.icon;
-                  const isActive = activeTab === key;
-                  const colorClass = isActive 
-                    ? `text-${tab.color}-600 border-${tab.color}-600` 
-                    : "text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300";
-                  
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => setActiveTab(key)}
-                      className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${colorClass} transition-colors duration-200`}
-                    >
-                      <IconComponent className="w-5 h-5 mr-2" />
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Tab Description */}
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <p className="text-gray-600 text-sm">
-              {tabConfig[activeTab].description}
-            </p>
-          </div>
-
           {/* Statistics Cards */}
           <div className="p-6 border-b border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -485,9 +401,9 @@ const LoanManagement = ({ language = "so" }) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-600 text-sm">{content[language].totalLoans}</p>
-                    <p className="text-2xl font-bold text-gray-900">{tabStats.totalLoans}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalLoans}</p>
                     <p className="text-gray-600 text-sm">{content[language].totalAmount}</p>
-                    <p className="text-lg font-semibold text-emerald-600">{formatCurrency(tabStats.totalAmount)}</p>
+                    <p className="text-lg font-semibold text-emerald-600">{formatCurrency(stats.totalAmount)}</p>
                   </div>
                   <DollarSign className="h-8 w-8 text-emerald-600" />
                 </div>
@@ -497,9 +413,9 @@ const LoanManagement = ({ language = "so" }) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-600 text-sm">{content[language].unpaidLoans}</p>
-                    <p className="text-2xl font-bold text-red-600">{tabStats.unpaidLoans}</p>
+                    <p className="text-2xl font-bold text-red-600">{stats.unpaidLoans}</p>
                     <p className="text-gray-600 text-sm">{content[language].unpaidAmount}</p>
-                    <p className="text-lg font-semibold text-red-600">{formatCurrency(tabStats.unpaidAmount)}</p>
+                    <p className="text-lg font-semibold text-red-600">{formatCurrency(stats.unpaidAmount)}</p>
                   </div>
                   <XCircle className="h-8 w-8 text-red-600" />
                 </div>
@@ -509,9 +425,9 @@ const LoanManagement = ({ language = "so" }) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-600 text-sm">{content[language].paidLoans}</p>
-                    <p className="text-2xl font-bold text-green-600">{tabStats.paidLoans}</p>
+                    <p className="text-2xl font-bold text-green-600">{stats.paidLoans}</p>
                     <p className="text-gray-600 text-sm">{content[language].paidAmount}</p>
-                    <p className="text-lg font-semibold text-green-600">{formatCurrency(tabStats.paidAmount)}</p>
+                    <p className="text-lg font-semibold text-green-600">{formatCurrency(stats.paidAmount)}</p>
                   </div>
                   <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
@@ -613,14 +529,14 @@ const LoanManagement = ({ language = "so" }) => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
                 <p className="text-gray-600 mt-2">{content[language].loading}</p>
               </div>
-            ) : filteredLoans.length === 0 ? (
+            ) : loans.length === 0 ? (
               <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
                 <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-600">{content[language].noLoans}</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredLoans.map((loan) => (
+                {loans.map((loan) => (
                   <div key={loan._id} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                     {editingId === loan._id ? (
                       <form onSubmit={handleEditSubmit} className="space-y-3">
@@ -663,21 +579,6 @@ const LoanManagement = ({ language = "so" }) => {
                             min="1"
                             className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
                           />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {content[language].loanTypeLabel}
-                          </label>
-                          <select
-                            name="loanType"
-                            value={editFormData.loanType}
-                            onChange={handleEditChange}
-                            className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
-                          >
-                            <option value="family">{content[language].familyLoans}</option>
-                            <option value="clients">{content[language].clientsLoans}</option>
-                            <option value="special">{content[language].specialLoans}</option>
-                          </select>
                         </div>
                         <textarea
                           name="description"
@@ -754,24 +655,6 @@ const LoanManagement = ({ language = "so" }) => {
                                 {content[language].createdBy}: {getUsernameFromEmail(loan.createdBy.email || loan.createdBy)}
                               </p>
                             )}
-                            <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              !loan.loanType 
-                                ? "bg-gray-100 text-gray-800" 
-                                : loan.loanType === "family" 
-                                  ? "bg-blue-100 text-blue-800"
-                                  : loan.loanType === "clients"
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-purple-100 text-purple-800"
-                            }`}>
-                              {!loan.loanType 
-                                ? content[language].legacyLoan
-                                : loan.loanType === "family" 
-                                  ? content[language].familyLoans
-                                  : loan.loanType === "clients"
-                                    ? content[language].clientsLoans
-                                    : content[language].specialLoans
-                              }
-                            </div>
                           </div>
                         </div>
 
@@ -827,21 +710,6 @@ const LoanManagement = ({ language = "so" }) => {
                 >
                   <h3 className="text-xl font-bold text-emerald-600 mb-4">{content[language].createTitle}</h3>
                   <form onSubmit={handleCreateSubmit} className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {content[language].loanTypeLabel}
-                      </label>
-                      <select
-                        name="loanType"
-                        value={formData.loanType}
-                        onChange={handleCreateChange}
-                        className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
-                      >
-                        <option value="family">{content[language].familyLoans}</option>
-                        <option value="clients">{content[language].clientsLoans}</option>
-                        <option value="special">{content[language].specialLoans}</option>
-                      </select>
-                    </div>
                     <input
                       type="text"
                       name="personName"
