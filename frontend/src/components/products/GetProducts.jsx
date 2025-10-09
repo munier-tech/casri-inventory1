@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { FiEdit2, FiTrash2, FiCheck, FiX, FiPlus, FiPackage, FiDollarSign, FiSearch, FiTag } from "react-icons/fi";
+import { useEffect, useState, useRef } from "react";
+import { FiEdit2, FiTrash2, FiCheck, FiX, FiPlus, FiPackage, FiDollarSign, FiSearch, FiTag, FiPrinter } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import useProductsStore from "../../store/useProductsStore";
@@ -18,6 +18,7 @@ const GetProducts = () => {
     category: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const printRef = useRef();
 
   useEffect(() => {
     fetchProducts();
@@ -95,6 +96,153 @@ const GetProducts = () => {
     });
   };
 
+  const handlePrint = () => {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Liiska Alaabta - Casri Electronics</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #000;
+          }
+          .print-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+          }
+          .print-header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 24px;
+          }
+          .print-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          .stat-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 12px;
+          }
+          th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+          }
+          .text-right { text-align: right; }
+          .text-center { text-align: center; }
+          .out-of-stock { color: #dc2626; font-weight: bold; }
+          .low-stock { color: #d97706; font-weight: bold; }
+          .in-stock { color: #059669; font-weight: bold; }
+          .total-row { background-color: #f9f9f9; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="print-header">
+          <h1>Liiska Alaabta - Casri Electronics</h1>
+          <p>Taariikh: ${new Date().toLocaleDateString('so-SO')}</p>
+        </div>
+        
+        <div class="print-stats">
+          <div class="stat-card">
+            <p><strong>Qiimaha Wadarta</strong></p>
+            <p>$${totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          </div>
+          <div class="stat-card">
+            <p><strong>Wadarta Alaabta</strong></p>
+            <p>${totalProducts}</p>
+          </div>
+          <div class="stat-card">
+            <p><strong>Alaabta Yar</strong></p>
+            <p>${lowStockItems}</p>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Magaca Alaabta</th>
+              <th>Qiimaha</th>
+              <th>Kaydka</th>
+              <th>Xaalada</th>
+              <th>Qaybta</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${products.map((product, index) => {
+              const getStockStatusForPrint = (stock, threshold = 5) => {
+                if (stock === 0) return { status: "out", text: "Dhamaatay" };
+                if (stock <= threshold) return { status: "low", text: `Yar ${stock}` };
+                return { status: "high", text: `Kaydka: ${stock}` };
+              };
+              
+              const stockInfo = getStockStatusForPrint(product.stock, product.lowStockThreshold);
+              const statusClass = stockInfo.status === 'out' ? 'out-of-stock' : 
+                                stockInfo.status === 'low' ? 'low-stock' : 'in-stock';
+              
+              return `
+                <tr>
+                  <td class="text-center">${index + 1}</td>
+                  <td>${product.name}</td>
+                  <td class="text-right">$${parseFloat(product.cost || 0).toFixed(2)}</td>
+                  <td class="text-center">${product.stock || 0}</td>
+                  <td class="${statusClass}">${stockInfo.text}</td>
+                  <td>${product.category?.name || "Qayb la'aan"}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="2" class="text-right"><strong>Wadarta Guud:</strong></td>
+              <td class="text-right"><strong>$${totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+              <td class="text-center"><strong>${products.reduce((sum, product) => sum + parseInt(product.stock || 0), 0)}</strong></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div style="margin-top: 30px; font-size: 11px; color: #666; text-align: center;">
+          <p>Liiskan waxaa soo saaray Casri Electronics System - ${new Date().toLocaleString('so-SO')}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Wait a bit for the content to render
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        // Don't close immediately to allow print dialog to show
+      }, 250);
+    } else {
+      alert('Please allow popups for printing');
+    }
+  };
+
   const content = {
     title: "Liiska Alaabta",
     tableHeaders: ["Alaabta", "Magac", "Qiimaha", "Kaydka", "Qaybta", "Ficilada"],
@@ -112,6 +260,7 @@ const GetProducts = () => {
     showingResults: "Waxa la muujinayaa",
     of: "oo ka mid ah",
     clearSearch: "Nadiifinta raadinta",
+    print: "Print",
   };
 
   return (
@@ -135,76 +284,89 @@ const GetProducts = () => {
                   <p className="text-blue-100">Maamulka alaabta</p>
                 </div>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -5px rgba(255,255,255,0.3)" }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center px-6 py-3 bg-white text-blue-600 hover:bg-blue-50 rounded-xl font-semibold shadow-lg"
-                onClick={() => (window.location.href = "/createProduct")}
-              >
-                <FiPlus className="w-5 h-5 mr-2" />
-                {content.addProduct}
-              </motion.button>
+              <div className="flex gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -5px rgba(59,130,246,0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handlePrint}
+                  className="flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold shadow-lg backdrop-blur-sm"
+                >
+                  <FiPrinter className="w-5 h-5 mr-2" />
+                  {content.print}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -5px rgba(255,255,255,0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center px-6 py-3 bg-white text-blue-600 hover:bg-blue-50 rounded-xl font-semibold shadow-lg"
+                  onClick={() => (window.location.href = "/createProduct")}
+                >
+                  <FiPlus className="w-5 h-5 mr-2" />
+                  {content.addProduct}
+                </motion.button>
+              </div>
             </div>
           </div>
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-blue-100">
-            {/* Total Inventory Value */}
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white rounded-xl p-6 shadow-lg border border-blue-100"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">{content.totalValue}</p>
-                  <p className="text-2xl font-bold text-gray-800 mt-1">
-                    ${totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
+          <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-blue-100">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Total Inventory Value */}
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white rounded-xl p-6 shadow-lg border border-blue-100"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600">{content.totalValue}</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">
+                      ${totalInventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <FiDollarSign className="w-6 h-6 text-green-600" />
+                  </div>
                 </div>
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <FiDollarSign className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
 
-            {/* Total Products */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-xl p-6 shadow-lg border border-blue-100"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">{content.totalProducts}</p>
-                  <p className="text-2xl font-bold text-gray-800 mt-1">{totalProducts}</p>
+              {/* Total Products */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-white rounded-xl p-6 shadow-lg border border-blue-100"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600">{content.totalProducts}</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{totalProducts}</p>
+                  </div>
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <FiPackage className="w-6 h-6 text-blue-600" />
+                  </div>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <FiPackage className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
 
-            {/* Low Stock Items */}
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white rounded-xl p-6 shadow-lg border border-blue-100"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">{content.lowStock}</p>
-                  <p className="text-2xl font-bold text-gray-800 mt-1">{lowStockItems}</p>
-                  <p className="text-xs text-red-500 mt-1">Alaabta u dhow inay Dhamaato</p>
+              {/* Low Stock Items */}
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-white rounded-xl p-6 shadow-lg border border-blue-100"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600">{content.lowStock}</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{lowStockItems}</p>
+                    <p className="text-xs text-red-500 mt-1">Alaabta u dhow inay Dhamaato</p>
+                  </div>
+                  <div className="p-3 bg-red-100 rounded-lg">
+                    <FiTag className="w-6 h-6 text-red-600" />
+                  </div>
                 </div>
-                <div className="p-3 bg-red-100 rounded-lg">
-                  <FiTag className="w-6 h-6 text-red-600" />
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
 
           {/* Search Section */}
@@ -448,7 +610,7 @@ const GetProducts = () => {
                             <FiSearch className="w-16 h-16 mb-4 text-gray-300" />
                             <p className="text-lg font-medium">Lama helin alaab la raadiyay</p>
                             <p className="text-sm text-gray-400 mt-1">
-                              Ma jiraan alaabo magac ku jira "{searchTerm}"
+                              Ma jiraan alaabo magac ku jira "${searchTerm}"
                             </p>
                             <button
                               onClick={() => setSearchTerm("")}

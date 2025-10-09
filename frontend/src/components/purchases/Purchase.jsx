@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import usePurchaseStore from "../../store/usepurchaseStore";
 
 const PurchaseManager = () => {
@@ -18,6 +18,7 @@ const PurchaseManager = () => {
     quantity: 1,
     price: "",
     additionalPrice: "",
+    subtractingPrice: "",
     description: "",
   });
 
@@ -25,6 +26,8 @@ const PurchaseManager = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [successMessage, setSuccessMessage] = useState("");
+  const [debugData, setDebugData] = useState("");
+  const printRef = useRef();
 
   useEffect(() => {
     getAllPurchases();
@@ -38,43 +41,58 @@ const PurchaseManager = () => {
     });
   };
 
-  // Calculate total based on quantity and price
   const calculateTotal = () => {
     const quantity = parseInt(formData.quantity) || 0;
     const price = parseFloat(formData.price) || 0;
     const additionalPrice = parseFloat(formData.additionalPrice) || 0;
-    return (quantity * price) + additionalPrice;
+    const subtractingPrice = parseFloat(formData.subtractingPrice) || 0;
+    return (quantity * price) + additionalPrice - subtractingPrice;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Calculate total exactly like backend does
+    const quantity = parseInt(formData.quantity) || 1;
+    const price = parseFloat(formData.price) || 0;
+    const additionalPrice = formData.additionalPrice ? parseFloat(formData.additionalPrice) : 0;
+    const subtractingPrice = formData.subtractingPrice ? parseFloat(formData.subtractingPrice) : 0;
     
-    // Ensure all numbers are properly converted
+    const calculatedTotal = (quantity * price) + additionalPrice - subtractingPrice;
+
+    // Prepare data for backend
     const submitData = {
       productName: formData.productName.trim(),
       supplierName: formData.supplierName.trim(),
-      quantity: parseInt(formData.quantity) || 1,
-      price: parseFloat(formData.price) || 0,
-      additionalPrice: formData.additionalPrice ? parseFloat(formData.additionalPrice) : 0,
+      quantity: quantity,
+      price: price,
+      additionalPrice: additionalPrice,
+      substractingPrice: subtractingPrice, // Map to backend field
       description: formData.description.trim(),
-      total: calculateTotal(),
+      total: calculatedTotal, // Explicitly send the calculated total
     };
 
     console.log("Submitting data:", submitData);
-    console.log("Editing ID:", editingId);
+    console.log("Calculation:", `${quantity} * ${price} + ${additionalPrice} - ${subtractingPrice} = ${calculatedTotal}`);
+    setDebugData(`Submitting: ${JSON.stringify(submitData, null, 2)}\nCalculation: ${quantity} * ${price} + ${additionalPrice} - ${subtractingPrice} = ${calculatedTotal}`);
 
     try {
       if (editingId) {
-        await updatePurchase(editingId, submitData);
+        console.log("Updating purchase:", editingId, submitData);
+        const result = await updatePurchase(editingId, submitData);
+        console.log("Update result:", result);
         setSuccessMessage("✅ Iibka si guul leh ayaa loo cusboonaysiiyay!");
         setEditingId(null);
-        // Refresh purchases to ensure data is synced
-        await getAllPurchases();
       } else {
-        await addPurchase(submitData);
+        console.log("Adding new purchase:", submitData);
+        const result = await addPurchase(submitData);
+        console.log("Add result:", result);
         setSuccessMessage("✅ Iibka cusub si guul leh ayaa loo diwaan geliyay!");
       }
-      
+
+      // Refresh data
+      await getAllPurchases();
+
       // Reset form
       setFormData({
         productName: "",
@@ -82,14 +100,14 @@ const PurchaseManager = () => {
         quantity: 1,
         price: "",
         additionalPrice: "",
+        subtractingPrice: "",
         description: "",
       });
-      
-      // Clear success message after 3 seconds
+
       setTimeout(() => setSuccessMessage(""), 3000);
-      
     } catch (err) {
       console.error("Submit error:", err);
+      setDebugData(`Error: ${err.message}`);
     }
   };
 
@@ -102,6 +120,7 @@ const PurchaseManager = () => {
       quantity: purchase.quantity || 1,
       price: purchase.price?.toString() || "",
       additionalPrice: purchase.additionalPrice?.toString() || "",
+      subtractingPrice: purchase.substractingPrice?.toString() || "", // Map from backend field
       description: purchase.description || "",
     });
   };
@@ -109,7 +128,7 @@ const PurchaseManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Ma hubtaa inaad rabto inaad tirtirto iibkan?")) {
       await deletePurchase(id);
-      await getAllPurchases(); // Refresh the list
+      await getAllPurchases();
     }
   };
 
@@ -121,21 +140,63 @@ const PurchaseManager = () => {
       quantity: 1,
       price: "",
       additionalPrice: "",
+      subtractingPrice: "",
       description: "",
     });
   };
 
-  // Filter purchases based on search term
+  const handlePrint = () => {
+    const printContent = printRef.current.innerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Liiska Iibka - Casri Electronics</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            .print-header h1 { margin: 0; color: #333; }
+            .print-header p { margin: 5px 0; color: #666; }
+            .print-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px; }
+            .stat-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; text-align: center; }
+            .stat-value { font-size: 18px; font-weight: bold; margin-top: 5px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+            th { background-color: #f5f5f5; font-weight: bold; }
+            .text-right { text-align: right; }
+            .total-row { background-color: #f9f9f9; font-weight: bold; }
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="print-header">
+            <h1>Liiska Iibka - Casri Electronics</h1>
+            <p>Taariikh: ${new Date().toLocaleDateString('so-SO')}</p>
+          </div>
+          ${printContent}
+        </body>
+      </html>
+    `;
+    
+    window.print();
+    document.body.innerHTML = originalContent;
+    window.location.reload();
+  };
+
   const filteredPurchases = purchases.filter(purchase =>
     purchase.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     purchase.supplierName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Sort purchases
   const sortedPurchases = [...filteredPurchases].sort((a, b) => {
-    const totalA = (a.quantity * a.price) + (Number(a.additionalPrice) || 0);
-    const totalB = (b.quantity * b.price) + (Number(b.additionalPrice) || 0);
-    
+    const totalA = (a.quantity * a.price) + (Number(a.additionalPrice) || 0) - (Number(a.substractingPrice) || 0);
+    const totalB = (b.quantity * b.price) + (Number(b.additionalPrice) || 0) - (Number(b.substractingPrice) || 0);
+
     switch (sortBy) {
       case "name":
         return a.productName.localeCompare(b.productName);
@@ -151,400 +212,379 @@ const PurchaseManager = () => {
     }
   });
 
-  // Calculate total value including additional prices
   const totalValue = filteredPurchases.reduce((sum, purchase) => {
     const baseTotal = purchase.quantity * purchase.price;
     const additional = Number(purchase.additionalPrice) || 0;
-    return sum + baseTotal + additional;
+    const subtracting = Number(purchase.substractingPrice) || 0;
+    return sum + baseTotal + additional - subtracting;
   }, 0);
 
-  // Calculate total quantity
-  const totalQuantity = filteredPurchases.reduce((sum, purchase) => 
-    sum + (purchase.quantity || 0), 0
-  );
-
-  // Calculate total additional price
-  const totalAdditionalPrice = filteredPurchases.reduce((sum, purchase) => 
-    sum + (Number(purchase.additionalPrice) || 0), 0
-  );
+  const totalQuantity = filteredPurchases.reduce((sum, purchase) => sum + (purchase.quantity || 0), 0);
+  const totalAdditionalPrice = filteredPurchases.reduce((sum, purchase) => sum + (Number(purchase.additionalPrice) || 0), 0);
+  const totalSubtractingPrice = filteredPurchases.reduce((sum, purchase) => sum + (Number(purchase.substractingPrice) || 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
+        {/* Debug Info */}
+        {debugData && (
+          <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded">
+            <details>
+              <summary className="cursor-pointer font-bold">Debug Info</summary>
+              <pre className="text-xs mt-2 whitespace-pre-wrap">{debugData}</pre>
+            </details>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Maamulka Iibka Casri Electronics</h1>
           <p className="text-gray-600">Maamul alaabta Meheradu soo Daymaysatey iyo kaydka</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-300">
-            <div className="flex items-center">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Wadarta Iibka</p>
-                <p className="text-2xl font-bold text-gray-900">{filteredPurchases.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow duration-300">
-            <div className="flex items-center">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Wadarta Qiimaha</p>
-                <p className="text-2xl font-bold text-gray-900">${totalValue.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500 hover:shadow-xl transition-shadow duration-300">
-            <div className="flex items-center">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Tirada Alaabta</p>
-                <p className="text-2xl font-bold text-gray-900">{totalQuantity.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500 hover:shadow-xl transition-shadow duration-300">
-            <div className="flex items-center">
-              <div className="bg-orange-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Qiimo Gudaha</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${totalAdditionalPrice.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Print Button */}
+        <div className="flex justify-end mb-4 no-print">
+          <button
+            onClick={handlePrint}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition duration-200"
+          >
+            🖨️ Print Liiska Iibka
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {/* Form Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800">
-                {editingId ? "🔄 Wax ka beddel Iibka" : "➕ Kudar Iib Cusub"}
-              </h2>
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="text-sm text-gray-500 hover:text-gray-700 bg-gray-100 px-3 py-1 rounded-lg transition duration-200"
-                >
-                  ❌ Jooji waxka-bedelka
-                </button>
-              )}
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    📦 Magaca Alaabta
-                  </label>
-                  <input
-                    type="text"
-                    name="productName"
-                    value={formData.productName}
-                    onChange={handleChange}
-                    placeholder="Geli magaca alaabta"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    🏢 Magaca Laga Soo daymaystey
-                  </label>
-                  <input
-                    type="text"
-                    name="supplierName"
-                    value={formData.supplierName}
-                    onChange={handleChange}
-                    placeholder="Geli magaca Laga Soo Iibsadey"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    🔢 Tiro (Quantity)
-                  </label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={formData.quantity}
-                    onChange={handleChange}
-                    min="1"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    💰 Qiimo ($)
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ➕ Qiimo Cusub ($)
-                  </label>
-                  <input
-                    type="number"
-                    name="additionalPrice"
-                    value={formData.additionalPrice}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
-                  />
-                </div>
-              </div>
-
-              {/* Total Display */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-blue-800">Wadarta Qiimaha:</span>
-                  <span className="text-xl font-bold text-blue-900">
-                    ${calculateTotal().toLocaleString()}
-                  </span>
-                </div>
-                <div className="text-xs text-blue-600 mt-1">
-                  (Tiro × Qiimo) + Qiimo Cusub = ${calculateTotal().toLocaleString()}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  📝 Sharaxaad
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Sharaxaad ku saabsan alaabta..."
-                  rows="3"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 transform hover:scale-[1.02]"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {editingId ? "La diiwaan gelineyno..." : "La diiwaan gelineyno..."}
-                  </span>
-                ) : editingId ? (
-                  "💾 Update Iibka"
-                ) : (
-                  "💾 Keydso Iibka"
-                )}
-              </button>
-            </form>
-
-            {/* Success Message */}
-            {successMessage && (
-              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-600 text-sm font-medium">{successMessage}</p>
-              </div>
-            )}
-
-            {/* Error Message */}
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm font-medium">{error}</p>
-              </div>
-            )}
-          </div>
-
-          {/* List Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-3 lg:space-y-0">
-              <h2 className="text-xl font-bold text-gray-800">📋 Liiska Deymaha Meherada</h2>
-              
-              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                <div className="relative w-full sm:w-64">
-                  <input
-                    type="text"
-                    placeholder="🔍 Raadi alaabta ama iibsaha..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                  />
-                  <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        {/* Stats Cards */}
+        <div ref={printRef}>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div className="bg-white rounded-xl shadow-lg p-4 border-l-4 border-blue-500">
+              <div className="flex items-center">
+                <div className="bg-blue-100 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
-                
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full sm:w-40 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                >
-                  <option value="newest">🆕 Ugu Cusub</option>
-                  <option value="name">🔤 Magaca</option>
-                  <option value="quantity">📊 Tiro</option>
-                  <option value="price">💰 Qiimo</option>
-                  <option value="total">💵 Wadarta</option>
-                </select>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Wadarta Iibka</p>
+                  <p className="text-lg font-bold text-gray-900">{filteredPurchases.length}</p>
+                </div>
               </div>
             </div>
 
-            {sortedPurchases.length === 0 ? (
-              <div className="text-center py-12">
-                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
-                <p className="text-gray-500 text-lg">Ma jiro Dayn la heli karo</p>
-                {searchTerm && (
-                  <p className="text-gray-400 text-sm mt-2">Isku day Magac kale</p>
+            <div className="bg-white rounded-xl shadow-lg p-4 border-l-4 border-green-500">
+              <div className="flex items-center">
+                <div className="bg-green-100 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Wadarta Qiimaha</p>
+                  <p className="text-lg font-bold text-gray-900">${totalValue.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-4 border-l-4 border-purple-500">
+              <div className="flex items-center">
+                <div className="bg-purple-100 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Tirada Alaabta</p>
+                  <p className="text-lg font-bold text-gray-900">{totalQuantity.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-4 border-l-4 border-orange-500">
+              <div className="flex items-center">
+                <div className="bg-orange-100 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Qiimo Gudaha</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    ${totalAdditionalPrice.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-4 border-l-4 border-red-500">
+              <div className="flex items-center">
+                <div className="bg-red-100 p-2 rounded-lg">
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Qiimo Laga Jaray</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    ${totalSubtractingPrice.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Form & List Section */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {/* Form */}
+            <div className="bg-white rounded-xl shadow-lg p-6 no-print">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-800">
+                  {editingId ? "🔄 Wax ka beddel Iibka" : "➕ Kudar Iib Cusub"}
+                </h2>
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="text-sm text-gray-500 hover:text-gray-700 bg-gray-100 px-3 py-1 rounded-lg transition duration-200"
+                  >
+                    ❌ Jooji waxka-bedelka
+                  </button>
                 )}
               </div>
-            ) : (
-              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                {sortedPurchases.map((purchase, index) => {
-                  const baseTotal = purchase.quantity * purchase.price;
-                  const additionalPrice = Number(purchase.additionalPrice) || 0;
-                  const finalTotal = baseTotal + additionalPrice;
-                  
-                  return (
-                    <div 
-                      key={purchase._id} 
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-300 bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-white"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="bg-blue-100 text-blue-800 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-gray-800 text-lg">
-                              Magaca Alaabta : {purchase.productName}
-                            </h3>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
-                                🏷️ Tiro: {purchase.quantity}
-                              </span>
-                              <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                                💰 Qiimo: ${purchase.price}
-                              </span>
-                              {additionalPrice > 0 && (
-                                <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium">
-                                  ➕ Gudaha: ${additionalPrice}
-                                </span>
-                              )}
-                              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-medium">
-                                💵 Wadarta: ${finalTotal.toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEdit(purchase)}
-                            className="bg-yellow-100 text-yellow-700 p-2 rounded-lg hover:bg-yellow-200 transition duration-200 transform hover:scale-110"
-                            title="Wax ka beddel"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDelete(purchase._id)}
-                            className="bg-red-100 text-red-700 p-2 rounded-lg hover:bg-red-200 transition duration-200 transform hover:scale-110"
-                            title="Tirtir"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm text-gray-800">
-                        <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
-                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <div>
-                            <span className="font-semibold text-gray-700">Magaca Cida Daynta Leh:</span>
-                            <span className="ml-2 font-bold text-green-500">{purchase.supplierName}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg">
-                          <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                          </svg>
-                          <div>
-                            <span className="font-semibold text-blue-700">Asal ahaan:</span>
-                            <span className="ml-2 font-bold text-blue-900">${baseTotal.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
 
-                      {purchase.description && (
-                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                          <div className="flex items-start space-x-2">
-                            <span className="text-blue-600 mt-0.5">📝</span>
-                            <div>
-                              <span className="text-sm font-medium text-blue-800">Sharaxaad:</span>
-                              <p className="text-sm text-blue-700 mt-1">{purchase.description}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Product & Supplier */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📦 Magaca Alaabta
+                    </label>
+                    <input
+                      type="text"
+                      name="productName"
+                      value={formData.productName}
+                      onChange={handleChange}
+                      placeholder="Geli magaca alaabta"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      🏢 Magaca Laga Soo daymaystey
+                    </label>
+                    <input
+                      type="text"
+                      name="supplierName"
+                      value={formData.supplierName}
+                      onChange={handleChange}
+                      placeholder="Geli magaca Laga Soo Iibsadey"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Quantity, Price, Additional & Subtracting */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      🔢 Tiro
+                    </label>
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={formData.quantity}
+                      onChange={handleChange}
+                      min="1"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      💰 Qiimo ($)
+                    </label>
+                    <input
+                      type="number"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleChange}
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ➕ Qiimo ku Dar ($)
+                    </label>
+                    <input
+                      type="number"
+                      name="additionalPrice"
+                      value={formData.additionalPrice}
+                      onChange={handleChange}
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ➖ Qiimo ka Jar ($)
+                    </label>
+                    <input
+                      type="number"
+                      name="subtractingPrice"
+                      value={formData.subtractingPrice}
+                      onChange={handleChange}
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition duration-200"
+                    />
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📝 Faahfaahin
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Geli faahfaahinta iibka..."
+                    rows="3"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                  />
+                </div>
+
+                {/* Total */}
+                <div className="text-right font-semibold text-lg text-gray-800 bg-gray-50 p-3 rounded-lg">
+                  Wadarta: ${calculateTotal().toLocaleString()}
+                </div>
+
+                {/* Submit */}
+                <div>
+                  <button
+                    type="submit"
+                    className={`w-full py-3 rounded-lg font-bold text-white transition duration-200 ${
+                      editingId ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
+                    }`}
+                  >
+                    {editingId ? "🔄 Cusbooneysii Iibka" : "➕ Kudar Iibka"}
+                  </button>
+                </div>
+
+                {successMessage && (
+                  <p className="text-green-600 mt-2 font-medium text-center">{successMessage}</p>
+                )}
+              </form>
+            </div>
+
+            {/* Purchases List */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <h2 className="text-xl font-bold text-gray-800">Liiska Iibka</h2>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                  >
+                    <option value="newest">Ugu Cuslayn</option>
+                    <option value="name">Magaca</option>
+                    <option value="quantity">Tirada</option>
+                    <option value="price">Qiimaha</option>
+                    <option value="total">Wadarta</option>
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="🔍 Raadi alaabta..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                  />
+                </div>
               </div>
-            )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="p-3 border text-left font-semibold text-gray-700">Alaabta</th>
+                      <th className="p-3 border text-left font-semibold text-gray-700">Iibsaday</th>
+                      <th className="p-3 border text-center font-semibold text-gray-700">Tiro</th>
+                      <th className="p-3 border text-right font-semibold text-gray-700">Qiimo</th>
+                      <th className="p-3 border text-right font-semibold text-gray-700">qiimaha lagu daray</th>
+                      <th className="p-3 border text-right font-semibold text-gray-700">Qiimo laga jaray</th>
+                      <th className="p-3 border text-right font-semibold text-gray-700">Total</th>
+                      <th className="p-3 border text-center font-semibold text-gray-700 no-print">Ficilada</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedPurchases.map((purchase) => {
+                      const total = (purchase.quantity * purchase.price) + 
+                                   (Number(purchase.additionalPrice) || 0) - 
+                                   (Number(purchase.substractingPrice) || 0);
+                      return (
+                        <tr key={purchase._id} className="hover:bg-gray-50 border-b">
+                          <td className="p-3 border text-left align-top">{purchase.productName}</td>
+                          <td className="p-3 border text-left align-top">{purchase.supplierName}</td>
+                          <td className="p-3 border text-center align-top">{purchase.quantity}</td>
+                          <td className="p-3 border text-right align-top">${purchase.price?.toLocaleString()}</td>
+                          <td className="p-3 border text-right align-top">${(purchase.additionalPrice || 0)?.toLocaleString()}</td>
+                          <td className="p-3 border text-right align-top">${(purchase.substractingPrice || 0)?.toLocaleString()}</td>
+                          <td className="p-3 border text-right align-top font-semibold">${total.toLocaleString()}</td>
+                          <td className="p-3 border text-center align-top no-print">
+                            <div className="flex justify-center gap-2">
+                              <button
+                                onClick={() => handleEdit(purchase)}
+                                className="text-blue-600 hover:text-blue-800 px-2 py-1 rounded transition duration-200"
+                                title="Edit"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => handleDelete(purchase._id)}
+                                className="text-red-600 hover:text-red-800 px-2 py-1 rounded transition duration-200"
+                                title="Delete"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {sortedPurchases.length === 0 && (
+                      <tr>
+                        <td colSpan="8" className="p-4 text-center text-gray-500 border">
+                          Lama helin iibka la raadinayo
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-gray-50 font-semibold">
+                      <td colSpan="2" className="p-3 border text-right">Wadarta Guud:</td>
+                      <td className="p-3 border text-center">{totalQuantity.toLocaleString()}</td>
+                      <td className="p-3 border"></td>
+                      <td className="p-3 border text-right">${totalAdditionalPrice.toLocaleString()}</td>
+                      <td className="p-3 border text-right">${totalSubtractingPrice.toLocaleString()}</td>
+                      <td className="p-3 border text-right">${totalValue.toLocaleString()}</td>
+                      <td className="p-3 border no-print"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>

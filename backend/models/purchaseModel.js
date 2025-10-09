@@ -8,6 +8,7 @@ const purchaseSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     quantity: { type: Number, required: true },
     additionalPrice: { type: Number, default: 0 },
+    substractingPrice : { type : Number , default : 0},
     description: { type: String, default: "" },
     total: { type: Number, required: true },
     datePurchased: { type: Date, default: Date.now },

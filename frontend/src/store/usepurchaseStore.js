@@ -8,18 +8,28 @@ const usePurchaseStore = create((set, get) => ({
   loading: false,
   error: null,
 
-  // ✅ Create purchase
+  // ✅ Create purchase (includes substractingPrice)
   addPurchase: async (purchaseData) => {
     try {
       set({ loading: true, error: null });
-      const res = await axios.post("/purchases", purchaseData);
+
+      // Ensure substractingPrice defaults to 0 if not provided
+      const data = {
+        ...purchaseData,
+        substractingPrice: purchaseData.substractingPrice || 0,
+      };
+
+      const res = await axios.post("/purchases", data);
       set((state) => ({
         purchases: [...state.purchases, res.data.purchase],
         loading: false,
       }));
       return res.data;
     } catch (err) {
-      set({ loading: false, error: err.response?.data?.message || err.message });
+      set({
+        loading: false,
+        error: err.response?.data?.message || err.message,
+      });
     }
   },
 
@@ -30,7 +40,10 @@ const usePurchaseStore = create((set, get) => ({
       const res = await axios.get("/purchases");
       set({ purchases: res.data.purchases, loading: false });
     } catch (err) {
-      set({ loading: false, error: err.response?.data?.message || err.message });
+      set({
+        loading: false,
+        error: err.response?.data?.message || err.message,
+      });
     }
   },
 
@@ -41,35 +54,50 @@ const usePurchaseStore = create((set, get) => ({
       const res = await axios.get("/purchases/daily");
       set({ dailyPurchases: res.data.purchases, loading: false });
     } catch (err) {
-      set({ loading: false, error: err.response?.data?.message || err.message });
+      set({
+        loading: false,
+        error: err.response?.data?.message || err.message,
+      });
     }
   },
 
-  // ✅ Update purchase
- // ✅ Update purchase
-updatePurchase: async (id, updateData) => {
-  try {
-    console.log("Updating purchase:", id, updateData); // Debug log
-    set({ loading: true, error: null });
-    const res = await axios.put(`/purchases/${id}`, updateData);
-    console.log("Update response:", res.data); // Debug log
-    
-    set((state) => {
-      const updatedPurchases = state.purchases.map((p) =>
-        p._id === id ? res.data.purchase : p
-      );
-      console.log("Updated purchases:", updatedPurchases); // Debug log
-      return {
-        purchases: updatedPurchases,
-        loading: false,
+  // ✅ Update purchase (includes substractingPrice)
+  updatePurchase: async (id, updateData) => {
+    try {
+      console.log("Updating purchase:", id, updateData);
+      set({ loading: true, error: null });
+
+      // Default substractingPrice if missing
+      const data = {
+        ...updateData,
+        substractingPrice:
+          updateData.substractingPrice !== undefined
+            ? updateData.substractingPrice
+            : 0,
       };
-    });
-    return res.data;
-  } catch (err) {
-    console.error("Update error:", err); // Debug log
-    set({ loading: false, error: err.response?.data?.message || err.message });
-  }
-},
+
+      const res = await axios.put(`/purchases/${id}`, data);
+      console.log("Update response:", res.data);
+
+      set((state) => {
+        const updatedPurchases = state.purchases.map((p) =>
+          p._id === id ? res.data.purchase : p
+        );
+        return {
+          purchases: updatedPurchases,
+          loading: false,
+        };
+      });
+
+      return res.data;
+    } catch (err) {
+      console.error("Update error:", err);
+      set({
+        loading: false,
+        error: err.response?.data?.message || err.message,
+      });
+    }
+  },
 
   // ✅ Delete purchase
   deletePurchase: async (id) => {
@@ -81,7 +109,10 @@ updatePurchase: async (id, updateData) => {
         loading: false,
       }));
     } catch (err) {
-      set({ loading: false, error: err.response?.data?.message || err.message });
+      set({
+        loading: false,
+        error: err.response?.data?.message || err.message,
+      });
     }
   },
 }));

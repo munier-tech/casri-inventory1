@@ -5,9 +5,12 @@ import Purchase from "../models/purchaseModel.js";
 /**
  * Create a new purchase record
  */
+/**
+ * Create a new purchase record
+ */
 export const addPurchase = async (req, res) => {
   try {
-    const { productName, supplierName, price, quantity, additionalPrice, description, total } = req.body || {};
+    const { productName, supplierName, price, quantity, additionalPrice, substractingPrice, description, total } = req.body || {};
     const userId = req.user._id;
 
     if (!productName || !supplierName || price === undefined || quantity === undefined) {
@@ -17,7 +20,12 @@ export const addPurchase = async (req, res) => {
     const parsedQuantity = parseInt(quantity, 10);
     const parsedPrice = parseFloat(price);
     const parsedAdditionalPrice = additionalPrice ? parseFloat(additionalPrice) : 0;
-    const parsedTotal = total ? parseFloat(total) : (parsedQuantity * parsedPrice) + parsedAdditionalPrice;
+    const parsedSubstractingPrice = substractingPrice ? parseFloat(substractingPrice) : 0;
+    
+    // Use the provided total OR calculate with the same values being saved
+    const parsedTotal = total
+      ? parseFloat(total)
+      : (parsedQuantity * parsedPrice) + parsedAdditionalPrice - parsedSubstractingPrice;
 
     if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
       return res.status(400).json({ message: "Quantity must be a positive number." });
@@ -28,6 +36,9 @@ export const addPurchase = async (req, res) => {
     if (isNaN(parsedAdditionalPrice) || parsedAdditionalPrice < 0) {
       return res.status(400).json({ message: "Additional price must be a non-negative number." });
     }
+    if (isNaN(parsedSubstractingPrice) || parsedSubstractingPrice < 0) {
+      return res.status(400).json({ message: "Substracting price must be a non-negative number." });
+    }
 
     const newPurchase = new Purchase({
       productName,
@@ -35,6 +46,7 @@ export const addPurchase = async (req, res) => {
       price: parsedPrice,
       quantity: parsedQuantity,
       additionalPrice: parsedAdditionalPrice,
+      substractingPrice: parsedSubstractingPrice,
       description: description || "",
       total: parsedTotal,
       user: userId,
@@ -97,11 +109,13 @@ export const getDailyPurchases = async (req, res) => {
 
 /**
  * Update a purchase record
+/**
+ * Update a purchase record
  */
 export const updatePurchase = async (req, res) => {
   try {
     const { id } = req.params;
-    const { productName, supplierName, price, quantity, additionalPrice, description, total, datePurchased } = req.body || {};
+    const { productName, supplierName, price, quantity, additionalPrice, substractingPrice, description, total, datePurchased } = req.body || {};
 
     const purchase = await Purchase.findById(id);
     if (!purchase) {
@@ -112,6 +126,12 @@ export const updatePurchase = async (req, res) => {
     if (purchase.user && purchase.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "You are not authorized to update this purchase." });
     }
+
+    // Store original values for calculation
+    const originalQuantity = purchase.quantity;
+    const originalPrice = purchase.price;
+    const originalAdditionalPrice = purchase.additionalPrice;
+    const originalSubtractingPrice = purchase.substractingPrice;
 
     // Validate and set fields if provided
     if (productName !== undefined) purchase.productName = productName;
@@ -142,6 +162,15 @@ export const updatePurchase = async (req, res) => {
       purchase.additionalPrice = parsedAdditionalPrice;
     }
 
+    if (substractingPrice !== undefined) {
+      const parsedSubstractingPrice = parseFloat(substractingPrice);
+      if (isNaN(parsedSubstractingPrice) || parsedSubstractingPrice < 0) {
+        return res.status(400).json({ message: "Substracting price must be a non-negative number." });
+      }
+      purchase.substractingPrice = parsedSubstractingPrice;
+    }
+
+    // Calculate total using UPDATED values, not original ones
     if (total !== undefined) {
       const parsedTotal = parseFloat(total);
       if (isNaN(parsedTotal) || parsedTotal < 0) {
@@ -149,8 +178,17 @@ export const updatePurchase = async (req, res) => {
       }
       purchase.total = parsedTotal;
     } else {
-      // Auto-calculate total if not provided
-      const calculatedTotal = (purchase.quantity * purchase.price) + (purchase.additionalPrice || 0);
+      // Use the UPDATED values for calculation, not the original ones
+      const currentQuantity = quantity !== undefined ? parseInt(quantity, 10) : purchase.quantity;
+      const currentPrice = price !== undefined ? parseFloat(price) : purchase.price;
+      const currentAdditionalPrice = additionalPrice !== undefined ? parseFloat(additionalPrice) : purchase.additionalPrice;
+      const currentSubtractingPrice = substractingPrice !== undefined ? parseFloat(substractingPrice) : purchase.substractingPrice;
+
+      const calculatedTotal = 
+        (currentQuantity * currentPrice) + 
+        (currentAdditionalPrice || 0) - 
+        (currentSubtractingPrice || 0);
+      
       purchase.total = calculatedTotal;
     }
 
