@@ -623,7 +623,7 @@ const GetProducts = () => {
                           <>
                             <FiPackage className="w-16 h-16 mb-4 text-gray-300" />
                             <p className="text-lg font-medium">{content.noProducts}</p>
-                            <p className="text-sm text-gray-400 mt-1">Ku dar alaab cusub si aad u bilowdo</p>
+                            <p className="text-sm text-gray-400 mt-1">Ku dar Alaab cusub si aad u bilowdo</p>
                           </>
                         )}
                       </div>
