@@ -39,6 +39,7 @@ const LoanManagement = ({ language = "so" }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     personName: "",
@@ -164,6 +165,7 @@ const LoanManagement = ({ language = "so" }) => {
       return;
     }
     
+    setIsSubmitting(true);
     await createLoan(formData);
     if (!error) {
       setFormData({
@@ -175,10 +177,12 @@ const LoanManagement = ({ language = "so" }) => {
       });
       setIsCreating(false);
     }
+    setIsSubmitting(false);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     await updateLoan(editingId, editFormData);
     if (!error) {
       setEditingId(null);
@@ -190,6 +194,7 @@ const LoanManagement = ({ language = "so" }) => {
         quantity: 1
       });
     }
+    setIsSubmitting(false);
   };
 
   const startEditing = (loan) => {
@@ -784,13 +789,118 @@ const LoanManagement = ({ language = "so" }) => {
                       rows="2"
                     />
                     <div className="flex justify-end space-x-2 mt-3">
-                      <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 bg-red-600 rounded text-white">
-                        <X className="w-4 h-4 mr-1 inline" />
+                      <button 
+                        type="button" 
+                        onClick={() => setIsCreating(false)} 
+                        className="px-4 py-2 bg-red-600 rounded text-white flex items-center"
+                      >
+                        <X className="w-4 h-4 mr-1" />
                         {content[language].cancel}
                       </button>
-                      <button type="submit" className="px-4 py-2 bg-green-600 rounded text-white">
-                        <Check className="w-4 h-4 mr-1 inline" />
-                        {content[language].save}
+                      <button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className="px-4 py-2 bg-green-600 rounded text-white flex items-center disabled:opacity-50"
+                      >
+                        {isSubmitting ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                        ) : (
+                          <Check className="w-4 h-4 mr-1" />
+                        )}
+                        {isSubmitting ? "Saving..." : content[language].save}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Edit Loan Modal */}
+          <AnimatePresence>
+            {editingId && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+                onClick={cancelEditing}
+              >
+                <motion.div
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0.8 }}
+                  className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 className="text-xl font-bold text-emerald-600 mb-4">{content[language].editTitle}</h3>
+                  <form onSubmit={handleEditSubmit} className="space-y-3">
+                    <input
+                      type="text"
+                      name="personName"
+                      placeholder={content[language].personNameLabel}
+                      value={editFormData.personName}
+                      onChange={handleEditChange}
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
+                      required
+                    />
+                    <input
+                      type="text"
+                      name="productName"
+                      placeholder={content[language].productNameLabel}
+                      value={editFormData.productName}
+                      onChange={handleEditChange}
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
+                      required
+                    />
+                    <input
+                      type="number"
+                      name="amount"
+                      placeholder={content[language].amountLabel}
+                      value={editFormData.amount}
+                      onChange={handleEditChange}
+                      step="0.01"
+                      min="0"
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
+                      required
+                    />
+                    <input
+                      type="number"
+                      name="quantity"
+                      placeholder={content[language].quantityLabel}
+                      value={editFormData.quantity}
+                      onChange={handleEditChange}
+                      min="1"
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
+                    />
+                    <textarea
+                      name="description"
+                      placeholder={content[language].descriptionLabel}
+                      value={editFormData.description}
+                      onChange={handleEditChange}
+                      className="w-full p-2 rounded bg-gray-50 border border-gray-300 text-gray-900"
+                      rows="2"
+                    />
+                    <div className="flex justify-end space-x-2 mt-3">
+                      <button 
+                        type="button" 
+                        onClick={cancelEditing} 
+                        className="px-4 py-2 bg-red-600 rounded text-white flex items-center"
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        {content[language].cancel}
+                      </button>
+                      <button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className="px-4 py-2 bg-green-600 rounded text-white flex items-center disabled:opacity-50"
+                      >
+                        {isSubmitting ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                        ) : (
+                          <Check className="w-4 h-4 mr-1" />
+                        )}
+                        {isSubmitting ? "Saving..." : content[language].save}
                       </button>
                     </div>
                   </form>
