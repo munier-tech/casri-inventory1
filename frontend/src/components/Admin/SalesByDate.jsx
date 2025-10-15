@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import useSalesStore from "../../store/UseSalesStore";
-import { FiCalendar, FiDollarSign, FiEdit, FiTrash2, FiRefreshCw, FiChevronDown, FiChevronUp, FiUser, FiPackage, FiTrendingUp } from "react-icons/fi";
+import { FiCalendar, FiDollarSign, FiEdit, FiTrash2, FiRefreshCw, FiChevronDown, FiChevronUp, FiUser, FiPackage } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 
@@ -30,32 +30,6 @@ const SalesByDate = () => {
     if (date) {
       fetchSalesByDate(date);
     }
-  };
-
-  // Calculate profit for a single sale
-  const calculateSaleProfit = (sale) => {
-    const productCost = sale.product?.cost || 0;
-    const sellingPrice = sale.sellingCost || sale.sellingPrice || 0;
-    const quantity = sale.quantity || 0;
-    
-    const profitPerUnit = sellingPrice - productCost;
-    const totalProfit = profitPerUnit * quantity;
-    
-    return {
-      profitPerUnit,
-      totalProfit,
-      profitMargin: sellingPrice > 0 ? (profitPerUnit / sellingPrice) * 100 : 0
-    };
-  };
-
-  // Calculate total profit for all sales
-  const calculateTotalProfit = () => {
-    if (!salesByDate?.sales) return 0;
-    
-    return salesByDate.sales.reduce((total, sale) => {
-      const profitData = calculateSaleProfit(sale);
-      return total + profitData.totalProfit;
-    }, 0);
   };
 
   const handleEdit = (sale) => {
@@ -124,8 +98,6 @@ const SalesByDate = () => {
 
   const totalSales = salesByDate?.total || 0;
   const salesCount = salesByDate?.sales?.length || 0;
-  const totalProfit = calculateTotalProfit();
-  const totalProfitMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -191,7 +163,7 @@ const SalesByDate = () => {
           >
             {/* Summary Card */}
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="text-center">
                   <p className="text-sm opacity-80">Wadarta Iibka</p>
                   <p className="text-3xl font-bold">${totalSales.toFixed(2)}</p>
@@ -199,13 +171,6 @@ const SalesByDate = () => {
                 <div className="text-center">
                   <p className="text-sm opacity-80">Tirada Iibka</p>
                   <p className="text-3xl font-bold">{salesCount}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm opacity-80">Wadarta Faaiidada</p>
-                  <p className="text-3xl font-bold">${totalProfit.toFixed(2)}</p>
-                  <p className="text-sm opacity-80 mt-1">
-                    {totalProfitMargin.toFixed(1)}% Faaiido
-                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm opacity-80">Celinta Celcelis ahaan</p>
@@ -223,7 +188,6 @@ const SalesByDate = () => {
             {/* Sales List */}
             <div className="space-y-4">
               {salesByDate.sales.map((sale) => {
-                const profitData = calculateSaleProfit(sale);
                 const productCost = sale.product?.cost || 0;
                 
                 return (
@@ -259,10 +223,8 @@ const SalesByDate = () => {
                             <span className="text-lg font-bold text-blue-600 block">
                               ${sale.totalAmount.toFixed(2)}
                             </span>
-                            <span className={`text-sm font-medium ${
-                              profitData.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              ${profitData.totalProfit.toFixed(2)} Faaiido
+                            <span className="text-sm text-gray-500">
+                              {sale.quantity} unug
                             </span>
                           </div>
                           {expandedSale === sale._id ? (
@@ -313,11 +275,6 @@ const SalesByDate = () => {
                                     />
                                   </div>
                                 </div>
-                                <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
-                                  <p className="text-sm text-amber-800 font-medium">
-                                    💡 Tusaale: Markaad wax ka beddesho, faaiidada ayaa si toos ah u cusboonaysanaysa
-                                  </p>
-                                </div>
                                 <div className="flex justify-end gap-3">
                                   <button
                                     onClick={handleCancelEdit}
@@ -352,34 +309,6 @@ const SalesByDate = () => {
                                   <div>
                                     <p className="text-sm text-gray-500">Wadarta</p>
                                     <p className="font-medium text-blue-600">${sale.totalAmount.toFixed(2)}</p>
-                                  </div>
-                                </div>
-                                
-                                {/* Profit Details */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                                  <div className="text-center">
-                                    <p className="text-sm text-gray-500">Faaiidada Wadarta</p>
-                                    <p className={`text-lg font-bold ${
-                                      profitData.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                      ${profitData.totalProfit.toFixed(2)}
-                                    </p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-sm text-gray-500">Faaiidada Mid Kasta</p>
-                                    <p className={`font-medium ${
-                                      profitData.profitPerUnit >= 0 ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                      ${profitData.profitPerUnit.toFixed(2)}
-                                    </p>
-                                  </div>
-                                  <div className="text-center">
-                                    <p className="text-sm text-gray-500">Miisaanka Faaiidada</p>
-                                    <p className={`font-medium ${
-                                      profitData.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                      {profitData.profitMargin.toFixed(1)}%
-                                    </p>
                                   </div>
                                 </div>
 

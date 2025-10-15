@@ -12,53 +12,77 @@ const uploadBufferToCloudinary = (fileBuffer, folder) => {
   });
 };
 
-// ✅ Create Product
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, cost, stock, lowStockThreshold, category } = req.body || {};
-    let imageUrl = "";
+    const body = req.body || {};
 
-    if (!name || !cost || !category) {
+    // Accept either a single product object or an array of products
+    const products = Array.isArray(body.products) ? body.products : [body];
+
+    if (!products.length) {
       return res.status(400).json({
         success: false,
-        error: "Magaca, Qiimaha Alaabta, iyo  qaybta ay ka tirsan Buuxi",
-        received: { name: !!name, cost: !!cost, category: !!category },
+        error: "Fadlan soo dir hal ama dhowr alaab si loo abuuro.",
       });
     }
 
-    // Upload to Cloudinary
-    if (req.file) {
-      let uploadResult;
-      if (req.file.buffer) {
-        uploadResult = await uploadBufferToCloudinary(req.file.buffer, "products");
-      } else {
-        uploadResult = await cloudinary.uploader.upload(req.file.path, { folder: "products" });
+    const createdProducts = [];
+    const failedProducts = [];
+
+    for (const item of products) {
+      const { name, description, cost, stock, lowStockThreshold, category } = item || {};
+
+      // Validate required fields
+      if (!name || !cost || !category) {
+        failedProducts.push({
+          ...item,
+          reason: "Magaca, Qiimaha Alaabta, iyo Qaybta waa in la buuxiyaa",
+        });
+        continue;
       }
-      imageUrl = uploadResult.secure_url;
+
+      
+
+      const productData = {
+        name: name.trim(),
+        description: description ? description.trim() : "",
+        cost: parseFloat(cost),
+        category: category.trim(),
+        stock: parseInt(stock) || 0,
+        lowStockThreshold: parseInt(lowStockThreshold) || 5,
+      };
+
+      createdProducts.push(productData);
     }
 
-    const productData = {
-      name: name.trim(),
-      description: description ? description.trim() : "",
-      cost: parseFloat(cost),
-      image: imageUrl,
-      category: category.trim(),
-      stock: parseInt(stock) || 0,
-      lowStockThreshold: parseInt(lowStockThreshold) || 5,
-    };
+    // If no valid products found
+    if (createdProducts.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Ma jiro wax alaab sax ah oo la abuuri karo.",
+        failedProducts,
+      });
+    }
 
-    const product = new Product(productData);
-    const savedProduct = await product.save();
+    // Insert products
+    const savedProducts = await Product.insertMany(createdProducts);
 
     res.status(201).json({
       success: true,
-      message: "Alaabta si guul leh ayaa la abuuray",
-      product: savedProduct,
+      message:
+        savedProducts.length > 1
+          ? "Alaabooyin badan si guul leh ayaa loo abuuray."
+          : "Alaabta si guul leh ayaa loo abuuray.",
+      createdCount: savedProducts.length,
+      failedCount: failedProducts.length,
+      createdProducts: savedProducts,
+      failedProducts,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
 
 // ✅ Get All Products
 export const getProducts = async (_req, res) => {

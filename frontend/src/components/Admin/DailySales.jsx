@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FiCalendar, FiDollarSign, FiPackage, FiRefreshCw, FiUser, FiSearch, FiTrash2, FiEdit, FiCheck, FiX, FiTrendingUp } from "react-icons/fi";
+import { FiCalendar, FiDollarSign, FiPackage, FiRefreshCw, FiUser, FiSearch, FiTrash2, FiEdit, FiCheck, FiX } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";
 import useSalesStore from "../../store/UseSalesStore";
@@ -34,30 +34,6 @@ const DailySales = () => {
       setFilteredSales(filtered);
     }
   }, [dailySales, searchTerm]);
-
-  // Calculate profit for a single sale
-  const calculateSaleProfit = (sale) => {
-    const productCost = sale.product?.cost || 0;
-    const sellingPrice = sale.sellingCost || sale.sellingPrice || 0;
-    const quantity = sale.quantity || 0;
-    
-    const profitPerUnit = sellingPrice - productCost;
-    const totalProfit = profitPerUnit * quantity;
-    
-    return {
-      profitPerUnit,
-      totalProfit,
-      profitMargin: sellingPrice > 0 ? (profitPerUnit / sellingPrice) * 100 : 0
-    };
-  };
-
-  // Calculate total profit for all filtered sales
-  const calculateTotalProfit = () => {
-    return filteredSales.reduce((total, sale) => {
-      const profitData = calculateSaleProfit(sale);
-      return total + profitData.totalProfit;
-    }, 0);
-  };
 
   const handleDateChange = (e) => {
     setSelectedDate(e.target.value);
@@ -104,7 +80,6 @@ const DailySales = () => {
 
   const totalSales = filteredSales.reduce((sum, sale) => sum + (sale.totalAmount || sale.total || 0), 0);
   const totalQuantity = filteredSales.reduce((sum, sale) => sum + sale.quantity, 0);
-  const totalProfit = calculateTotalProfit();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-gray-50 text-gray-900 py-8 px-4 sm:px-6 lg:px-8">
@@ -169,7 +144,7 @@ const DailySales = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -220,27 +195,6 @@ const DailySales = () => {
               </div>
             </div>
           </motion.div>
-
-          {/* Profit Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 shadow-xl text-white"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-amber-100 text-sm">Faaiidada Wadarta</p>
-                <p className="text-2xl font-bold">${totalProfit.toFixed(2)}</p>
-                <p className="text-amber-100 text-xs mt-1">
-                  {totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : 0}% Faaiido
-                </p>
-              </div>
-              <div className="bg-white/20 p-3 rounded-full">
-                <FiTrendingUp className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </motion.div>
         </div>
 
         {/* Sales Table */}
@@ -286,7 +240,6 @@ const DailySales = () => {
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Qiimaha Alaabta</th>
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Tirada</th>
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Qiimaha Iibka</th>
-                    <th className="px-6 py-4 text-left text-gray-700 font-semibold">Faaiidada</th>
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Wadarta</th>
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Wakhti</th>
                     <th className="px-6 py-4 text-left text-gray-700 font-semibold">Ficilada</th>
@@ -294,7 +247,6 @@ const DailySales = () => {
                 </thead>
                 <tbody>
                   {filteredSales.map((sale, index) => {
-                    const profitData = calculateSaleProfit(sale);
                     const productCost = sale.product?.cost || 0;
                     
                     return (
@@ -363,22 +315,6 @@ const DailySales = () => {
                               ${sale.sellingCost?.toFixed(2) || sale.sellingPrice?.toFixed(2)}
                             </span>
                           )}
-                        </td>
-
-                        {/* Profit */}
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col">
-                            <span className={`font-semibold ${
-                              profitData.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              ${profitData.totalProfit.toFixed(2)}
-                            </span>
-                            <span className={`text-xs ${
-                              profitData.profitMargin >= 0 ? 'text-green-500' : 'text-red-500'
-                            }`}>
-                              {profitData.profitMargin.toFixed(1)}%
-                            </span>
-                          </div>
                         </td>
                         
                         {/* Total Amount */}
@@ -463,7 +399,7 @@ const DailySales = () => {
               className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200"
             >
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Wadarta Iibka Maanta</h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <p className="text-gray-600 text-sm">Wadarta Iibka</p>
                   <p className="text-xl font-bold text-emerald-600">${totalSales.toFixed(2)}</p>
@@ -475,10 +411,6 @@ const DailySales = () => {
                 <div className="text-center">
                   <p className="text-gray-600 text-sm">Tirada Iibka</p>
                   <p className="text-xl font-bold text-purple-600">{filteredSales.length}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-600 text-sm">Wadarta Faaiidada</p>
-                  <p className="text-xl font-bold text-amber-600">${totalProfit.toFixed(2)}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-gray-600 text-sm">Qiimaha Dhexe</p>

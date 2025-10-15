@@ -2,72 +2,116 @@
 import dayjs from "dayjs";
 import Purchase from "../models/purchaseModel.js";
 
-/**
- * Create a new purchase record
- */
-/**
- * Create a new purchase record
- */
 export const addPurchase = async (req, res) => {
   try {
-    const { productName, supplierName, price, quantity, additionalPrice, substractingPrice, description, total } = req.body || {};
     const userId = req.user._id;
+    const body = req.body || {};
 
-    if (!productName || !supplierName || price === undefined || quantity === undefined) {
-      return res.status(400).json({ message: "All fields are required." });
+    // Allow both single and multiple purchase entries
+    const purchases = Array.isArray(body.purchases) ? body.purchases : [body];
+
+    if (!purchases.length) {
+      return res.status(400).json({
+        message: "Fadlan soo dir hal ama dhowr iibsasho si loo abuuro.",
+      });
     }
 
-    const parsedQuantity = parseInt(quantity, 10);
-    const parsedPrice = parseFloat(price);
-    const parsedAdditionalPrice = additionalPrice ? parseFloat(additionalPrice) : 0;
-    const parsedSubstractingPrice = substractingPrice ? parseFloat(substractingPrice) : 0;
-    
-    // Use the provided total OR calculate with the same values being saved
-    const parsedTotal = total
-      ? parseFloat(total)
-      : (parsedQuantity * parsedPrice) + parsedAdditionalPrice - parsedSubstractingPrice;
+    const createdPurchases = [];
+    const failedPurchases = [];
 
-    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      return res.status(400).json({ message: "Quantity must be a positive number." });
-    }
-    if (isNaN(parsedPrice) || parsedPrice < 0) {
-      return res.status(400).json({ message: "Price must be a non-negative number." });
-    }
-    if (isNaN(parsedAdditionalPrice) || parsedAdditionalPrice < 0) {
-      return res.status(400).json({ message: "Additional price must be a non-negative number." });
-    }
-    if (isNaN(parsedSubstractingPrice) || parsedSubstractingPrice < 0) {
-      return res.status(400).json({ message: "Substracting price must be a non-negative number." });
+    for (const item of purchases) {
+      const {
+        productName,
+        supplierName,
+        price,
+        quantity,
+        additionalPrice,
+        substractingPrice,
+        description,
+        total,
+      } = item || {};
+
+      // Validate required fields
+      if (!productName || !supplierName || price === undefined || quantity === undefined) {
+        failedPurchases.push({
+          ...item,
+          reason: "Magaca alaabta, qiimaha, tirada, iyo magaca alaab-qeybiyaha waa lama huraan.",
+        });
+        continue;
+      }
+
+      // Parse and validate numeric fields
+      const parsedQuantity = parseInt(quantity, 10);
+      const parsedPrice = parseFloat(price);
+      const parsedAdditionalPrice = additionalPrice ? parseFloat(additionalPrice) : 0;
+      const parsedSubstractingPrice = substractingPrice ? parseFloat(substractingPrice) : 0;
+
+      if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+        failedPurchases.push({ ...item, reason: "Quantity waa inuu noqdaa tiro togan." });
+        continue;
+      }
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        failedPurchases.push({ ...item, reason: "Price waa inuu noqdaa tiro aan tabaneyn." });
+        continue;
+      }
+      if (isNaN(parsedAdditionalPrice) || parsedAdditionalPrice < 0) {
+        failedPurchases.push({ ...item, reason: "Additional price waa inuu noqdaa tiro aan tabaneyn." });
+        continue;
+      }
+      if (isNaN(parsedSubstractingPrice) || parsedSubstractingPrice < 0) {
+        failedPurchases.push({ ...item, reason: "Substracting price waa inuu noqdaa tiro aan tabaneyn." });
+        continue;
+      }
+
+      // Calculate total (if not provided)
+      const parsedTotal = total
+        ? parseFloat(total)
+        : parsedQuantity * parsedPrice + parsedAdditionalPrice - parsedSubstractingPrice;
+
+      const purchase = {
+        productName,
+        supplierName,
+        price: parsedPrice,
+        quantity: parsedQuantity,
+        additionalPrice: parsedAdditionalPrice,
+        substractingPrice: parsedSubstractingPrice,
+        description: description || "",
+        total: parsedTotal,
+        user: userId,
+        datePurchased: dayjs().toDate(),
+      };
+
+      createdPurchases.push(purchase);
     }
 
-    const newPurchase = new Purchase({
-      productName,
-      supplierName,
-      price: parsedPrice,
-      quantity: parsedQuantity,
-      additionalPrice: parsedAdditionalPrice,
-      substractingPrice: parsedSubstractingPrice,
-      description: description || "",
-      total: parsedTotal,
-      user: userId,
-      datePurchased: dayjs().toDate(),
-    });
+    if (createdPurchases.length === 0) {
+      return res.status(400).json({
+        message: "Ma jiro wax iibsasho sax ah oo la abuuri karo.",
+        failedPurchases,
+      });
+    }
 
-    await newPurchase.save();
+    // Insert all valid purchases at once
+    const savedPurchases = await Purchase.insertMany(createdPurchases);
 
     res.status(201).json({
-      message: "Purchase recorded successfully.",
-      purchase: newPurchase,
+      message:
+        savedPurchases.length > 1
+          ? "Iibsashooyin badan si guul leh ayaa loo diiwaangeliyay."
+          : "Iibsashada si guul leh ayaa loo diiwaangeliyay.",
+      createdCount: savedPurchases.length,
+      failedCount: failedPurchases.length,
+      createdPurchases: savedPurchases,
+      failedPurchases,
     });
   } catch (error) {
-    console.error("Error adding Purchase:", error);
+    console.error("Error adding purchases:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-/**
- * Fetch all purchases for current user
- */
+
+
 export const getAllPurchases = async (req, res) => {
   try {
     const purchases = await Purchase.find({ user: req.user._id }).populate("user", "username");
