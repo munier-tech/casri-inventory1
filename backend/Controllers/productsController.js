@@ -12,6 +12,8 @@ const uploadBufferToCloudinary = (fileBuffer, folder) => {
   });
 };
 
+// productController.js - Update the validation message
+
 export const createProduct = async (req, res) => {
   try {
     const body = req.body || {};
@@ -22,7 +24,7 @@ export const createProduct = async (req, res) => {
     if (!products.length) {
       return res.status(400).json({
         success: false,
-        error: "Fadlan soo dir hal ama dhowr alaab si loo abuuro.",
+        error: "Please send at least one product to create.",
       });
     }
 
@@ -30,26 +32,25 @@ export const createProduct = async (req, res) => {
     const failedProducts = [];
 
     for (const item of products) {
-      const { name, description, cost, stock, lowStockThreshold, category } = item || {};
+      const { name, description, cost, stock, lowStockThreshold, price, expiryDate } = item || {};
 
-      // Validate required fields
-      if (!name || !cost || !category) {
+      // Validate required fields - only name and cost are required
+      if (!name || !cost) {
         failedProducts.push({
           ...item,
-          reason: "Magaca, Qiimaha Alaabta, iyo Qaybta waa in la buuxiyaa",
+          reason: "Product name and cost are required",
         });
         continue;
       }
-
-      
 
       const productData = {
         name: name.trim(),
         description: description ? description.trim() : "",
         cost: parseFloat(cost),
-        category: category.trim(),
+        price: price ? parseFloat(price) : parseFloat(cost), // Use price if provided, otherwise use cost
         stock: parseInt(stock) || 0,
         lowStockThreshold: parseInt(lowStockThreshold) || 5,
+        expiryDate: expiryDate || null,
       };
 
       createdProducts.push(productData);
@@ -59,7 +60,7 @@ export const createProduct = async (req, res) => {
     if (createdProducts.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Ma jiro wax alaab sax ah oo la abuuri karo.",
+        message: "No valid products found to create.",
         failedProducts,
       });
     }
@@ -71,8 +72,8 @@ export const createProduct = async (req, res) => {
       success: true,
       message:
         savedProducts.length > 1
-          ? "Alaabooyin badan si guul leh ayaa loo abuuray."
-          : "Alaabta si guul leh ayaa loo abuuray.",
+          ? "Products created successfully."
+          : "Product created successfully.",
       createdCount: savedProducts.length,
       failedCount: failedProducts.length,
       createdProducts: savedProducts,
@@ -83,25 +84,14 @@ export const createProduct = async (req, res) => {
   }
 };
 
-
-// ✅ Get All Products
-export const getProducts = async (_req, res) => {
-  try {
-    const products = await Product.find().populate("category", "name");
-    res.status(200).json({ success: true, count: products.length, products });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-// ✅ Update Product
+// Also update the updateProduct function:
 export const updateProduct = async (req, res) => {
   try {
-    const { name, description, cost, stock, lowStockThreshold, category } = req.body || {};
+    const { name, description, cost, stock, lowStockThreshold, price, expiryDate } = req.body || {};
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({ success: false, error: "Alaab Lama helin" });
+      return res.status(404).json({ success: false, error: "Product not found" });
     }
 
     // Handle new image upload
@@ -123,21 +113,35 @@ export const updateProduct = async (req, res) => {
     if (name) product.name = name.trim();
     if (description) product.description = description.trim();
     if (cost !== undefined) product.cost = parseFloat(cost);
+    if (price !== undefined) product.price = parseFloat(price);
     if (stock !== undefined) product.stock = parseInt(stock);
     if (lowStockThreshold !== undefined) product.lowStockThreshold = parseInt(lowStockThreshold);
-    if (category) product.category = category.trim();
+    if (expiryDate !== undefined) product.expiryDate = expiryDate;
 
     const updatedProduct = await product.save();
 
     res.status(200).json({
       success: true,
-      message: "Alaabta si guul leh ayaa la cusbooneysiiyay",
+      message: "Product updated successfully",
       product: updatedProduct,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+
+// ✅ Get All Products
+export const getProducts = async (_req, res) => {
+  try {
+    const products = await Product.find().populate("name");
+    res.status(200).json({ success: true, count: products.length, products });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
 
 // ✅ Delete Product
 export const deleteProduct = async (req, res) => {

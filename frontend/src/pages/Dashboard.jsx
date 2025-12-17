@@ -11,7 +11,6 @@ import {
   Receipt,
   FileScanIcon,
   ChevronRight,
-  Globe,
   BarChart3,
   Package,
   CreditCard,
@@ -23,531 +22,500 @@ import {
   DollarSign,
   User,
   ChevronDown,
+  Menu,
+  X,
+  Bell,
+  Search,
+  TrendingUp,
+  Activity,
+  Target,
+  Zap,
+  Briefcase,
+  Layers,
+  FileBarChart,
+  Settings,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import useProductsStore from "../store/useProductsStore";
 import useSalesStore from "../store/UseSalesStore";
 import { useUserStore } from "../store/useUserStore";
 
-const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [expandedTabs, setExpandedTabs] = useState({});
-  const [language, setLanguage] = useState("so");
+const Dashboard = ({ activeTab: initialActiveTab }) => {
+  const [activeTab, setActiveTab] = useState(initialActiveTab || "dashboard");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const { user, isLoading, dashboardAdmin, signOut } = useUserStore();
+  const { user, isLoading, signOut } = useUserStore();
   const { products, fetchProducts } = useProductsStore();
 
-  const toggleTabExpansion = (tabId) => {
-    setExpandedTabs((prev) => ({
-      ...prev,
-      [tabId]: !prev[tabId],
-    }));
-  };
+  // Update active tab when location changes
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes("/dashboard") || path === "/") setActiveTab("dashboard");
+    else if (path.includes("/products")) setActiveTab("products");
+    else if (path.includes("/stock")) setActiveTab("stock");
+    else if (path.includes("/AddSale")) setActiveTab("sales");
+    else if (path.includes("/financial")) setActiveTab("financial");
+    else if (path.includes("/reports")) setActiveTab("reports");
+    else if (path.includes("/UserDailySales") || path.includes("/UserProductsByDate")) setActiveTab("users");
+    else if (path.includes("/loans")) setActiveTab("loans");
+    else if (path.includes("/purchases")) setActiveTab("purchases");
+    else if (path.includes("/categories")) setActiveTab("categories");
+  }, [location]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const handleLogout = () => {
     signOut();
     setUserMenuOpen(false);
+    navigate("/signin");
   };
 
-  const lowOrSoldCount = Array.isArray(products)
-    ? products.reduce((acc, p) => {
-        const threshold = Number(p.lowStockThreshold ?? 5);
-        const stock = Number(p.stock ?? 0);
-        if (stock <= 0 || stock <= threshold) return acc + 1;
-        return acc;
-      }, 0)
-    : 0;
-
-  const content = {
-    so: {
-      dashboard: "Dashboard",
-      tabs: {
-        dashboard: "Dashboard",
-        products: "Alaabta",
-        stock: "Kaydka",
-        Loans: "Amaahda",
-        Purchases: "Daynta Meheradaha",
-        reports: "Warbixinno",
-        Sale: "Ku Dar Iib Cusub",
-        categories: "Qeybta Alaabta",
-        sales: "Iibka",
-        users: "Isticmaalayaasha",
-        financial: "Maaliyadda",
-      },
-      subtabs: {
-        createProduct: "Abuur Alaab",
-        GetReports: "Hel Warbixinno Bile",
-        stock: "Hel Kaydka",
-        GetYearlyReports: "Hel Warbixinno Sannadeed",
-        createCategory: "Abuur Qayb Cusub",
-        loan: "Fiiri Amaah",
-        getLoans: "Hel Amaahyo",
-        Sale: "Ku Dar Iib Cusub",
-        CreatePurchases: "Hel Daynta Meheradaha",
-        productList: "Liiska Alaabta",
-        dailySales: "Iibka Maanta",
-        salesByDate: "Iibka Taariikhda",
-        userDailySales: "Iibka Isticmaalaha Maanta",
-        userSalesByDate: "Iibka Isticmaalaha Taariikhda",
-        financialLog: "Diiwaanka Maaliyadda",
-        financialHistory: "Taariikhda Maaliyadda",
-      },
-      welcome: "Ku Soo dhawoow Dashboard-ka",
-      welcomeDesc:
-        "Halkan waxaad ka heli kartaa macluumaadka guud ee ganacsigaaga iyo xogta dhaqaale.",
-      generalReport: "Warbixinta Guud",
-      finance: "Dhaqaale",
-      financeDesc: "Halkan waxaad arki kartaa dhaqaalahaga guud",
-      productsDesc: "Maareynta alaabta iyo bakhaarka",
-      stats: "Tirakoobka",
-      quickActions: "Ficilada Degdegga ah",
-      logout: "Ka Bax",
-      login: "Login",
-      signup: "Sign Up",
-      inventory: "CASRI INVENTORY",
-    },
-    en: {
-      dashboard: "Dashboard",
-      tabs: {
-        dashboard: "Dashboard",
-        loans: "Loans",
-        products: "Products",
-        stock: "Stock",
-        categories: "Categories",
-        reports: "Reports",
-        Purchases: "Purchases",
-        sales: "Sales",
-        users: "Users",
-        financial: "Financial",
-      },
-      subtabs: {
-        createProduct: "Create Product",
-        loan: "Create Loan",
-        stock: "View Stock",
-        CreatePurchases: "Create Purchase",
-        createCategory: "Create Category",
-        GetReports: "Get Reports",
-        getLoans: "Get Loans",
-        GetYearlyReports: "Get Yearly Reports",
-        productList: "Product List",
-        dailySales: "Daily Sales",
-        salesByDate: "Sales by Date",
-        Sale: "Add New Sale",
-        userDailySales: "User Daily Sales",
-        userSalesByDate: "User Sales by Date",
-        financialLog: "Financial Log",
-        financialHistory: "Financial History",
-      },
-      welcome: "Welcome to your Dashboard",
-      welcomeDesc:
-        "Here you can find an overview of your business and financial data.",
-      generalReport: "General Report",
-      finance: "Finance",
-      financeDesc: "View your overall financial status here",
-      productsDesc: "Manage your products and inventory",
-      stats: "Statistics",
-      quickActions: "Quick Actions",
-      logout: "Logout",
-      login: "Login",
-      signup: "Sign Up",
-      inventory: "CASRI INVENTORY",
-    },
-  };
-
-  const tabs = [
+  const mainTabs = [
     {
       id: "dashboard",
-      label: content[language].tabs.dashboard,
+      label: "Dashboard",
       icon: Home,
-      color: "text-blue-600",
+      color: "from-blue-500 to-blue-600",
+      gradient: "bg-gradient-to-r from-blue-500 to-blue-600",
+      path: "/dashboard",
     },
     {
       id: "products",
-      label: content[language].tabs.products,
+      label: "Products",
       icon: Package,
-      color: "text-green-600",
-      subtabs: [
-        {
-          id: "create",
-          label: content[language].subtabs.createProduct,
-          icon: PlusCircle,
-          path: "/createProduct",
-        },
-        {
-          id: "list",
-          label: content[language].subtabs.productList,
-          icon: ShoppingBasket,
-          path: "/products",
-        },
-      ],
+      color: "from-emerald-500 to-emerald-600",
+      gradient: "bg-gradient-to-r from-emerald-500 to-emerald-600",
+      path: "/products",
     },
     {
       id: "stock",
-      label: content[language].tabs.stock,
+      label: "Inventory",
       icon: Boxes,
-      color: "text-orange-600",
-      subtabs: [
-        {
-          id: "get",
-          label: content[language].subtabs.stock,
-          icon: Boxes,
-          path: "/stock",
-        },
-      ],
-    },
-    {
-      id: "categories",
-      label: content[language].tabs.categories,
-      icon: ShoppingBasket,
-      color: "text-purple-600",
-      subtabs: [
-        {
-          id: "create",
-          label: content[language].subtabs.createCategory,
-          icon: PlusCircle,
-          path: "/categories",
-        },
-      ],
-    },
-    {
-      id: "purchase",
-      label: content[language].tabs.Purchases,
-      icon: ShoppingBasket,
-      color: "text-purple-600",
-      subtabs: [
-        {
-          id: "create",
-          label: content[language].subtabs.CreatePurchases,
-          icon: PlusCircle,
-          path: "/purchases",
-        },
-      ],
-    },
-    {
-      id: "loans",
-      label: content[language].tabs.Loans,
-      icon: DollarSign,
-      color: "text-yellow-600",
-      subtabs: [
-        {
-          id: "get",
-          label: content[language].subtabs.getLoans,
-          icon: PlusCircle,
-          path: "/loans",
-        },
-      ],
+      color: "from-amber-500 to-amber-600",
+      gradient: "bg-gradient-to-r from-amber-500 to-amber-600",
+      path: "/stock",
     },
     {
       id: "sales",
-      label: content[language].tabs.sales,
+      label: "Sales",
       icon: ShoppingCart,
-      color: "text-red-600",
-      subtabs: [
-        {
-          id: "Sale",
-          label: content[language].subtabs.Sale,
-          icon: Calendar,
-          path: "/AddSale",
-        },
-        {
-          id: "daily",
-          label: content[language].subtabs.dailySales,
-          icon: Calendar,
-          path: "/DailySales",
-        },
-        {
-          id: "history",
-          label: content[language].subtabs.salesByDate,
-          icon: FileText,
-          path: "/HistorySalesDate",
-        },
-      ],
+      color: "from-rose-500 to-rose-600",
+      gradient: "bg-gradient-to-r from-rose-500 to-rose-600",
+      path: "/AddSale",
+    },
+    {
+      id: "purchases",
+      label: "Purchases",
+      icon: ShoppingBasket,
+      color: "from-violet-500 to-violet-600",
+      gradient: "bg-gradient-to-r from-violet-500 to-violet-600",
+      path: "/purchases",
     },
     {
       id: "financial",
-      label: content[language].tabs.financial,
+      label: "Financial",
       icon: CreditCard,
-      color: "text-emerald-600",
-      subtabs: [
-        {
-          id: "financialLog",
-          label: content[language].subtabs.financialLog,
-          icon: FileScanIcon,
-          path: "/FinancialLogForm",
-        },
-        {
-          id: "financialHistory",
-          label: content[language].subtabs.financialHistory,
-          icon: FileScanIcon,
-          path: "/FinancialLogDate",
-        },
-      ],
+      color: "from-indigo-500 to-indigo-600",
+      gradient: "bg-gradient-to-r from-indigo-500 to-indigo-600",
+      path: "/FinancialLogForm",
+    },
+    {
+      id: "loans",
+      label: "Loans",
+      icon: DollarSign,
+      color: "from-yellow-500 to-yellow-600",
+      gradient: "bg-gradient-to-r from-yellow-500 to-yellow-600",
+      path: "/loans",
     },
     {
       id: "reports",
-      label: content[language].tabs.reports,
+      label: "Reports",
       icon: BarChart3,
-      color: "text-indigo-600",
-      subtabs: [
-        {
-          id: "get",
-          label: content[language].subtabs.GetReports,
-          icon: PlusCircle,
-          path: "/reports",
-        },
-        {
-          id: "yearly",
-          label: content[language].subtabs.GetYearlyReports,
-          icon: PlusCircle,
-          path: "/yearlyreports",
-        },
-      ],
+      color: "from-purple-500 to-purple-600",
+      gradient: "bg-gradient-to-r from-purple-500 to-purple-600",
+      path: "/reports",
     },
     {
       id: "users",
-      label: content[language].tabs.users,
+      label: "Users",
       icon: Users,
-      color: "text-pink-600",
-      subtabs: [
-        {
-          id: "userDaily",
-          label: content[language].subtabs.userDailySales,
-          icon: Receipt,
-          path: "/UserDailySales",
-        },
-        {
-          id: "userHistory",
-          label: content[language].subtabs.userSalesByDate,
-          icon: FileText,
-          path: "/UserProductsByDate",
-        },
-      ],
+      color: "from-pink-500 to-pink-600",
+      gradient: "bg-gradient-to-r from-pink-500 to-pink-600",
+      path: "/UserDailySales",
+    },
+  ];
+
+  const quickAccessCards = [
+    {
+      id: "createProduct",
+      label: "Create Product",
+      icon: PlusCircle,
+      color: "bg-gradient-to-r from-emerald-500 to-emerald-600",
+      path: "/createProduct",
+      desc: "Add new product to inventory",
+    },
+    {
+      id: "dailySales",
+      label: "Daily Sales",
+      icon: Calendar,
+      color: "bg-gradient-to-r from-rose-500 to-rose-600",
+      path: "/DailySales",
+      desc: "View today's sales report",
+    },
+    {
+      id: "newSale",
+      label: "New Sale",
+      icon: ShoppingCart,
+      color: "bg-gradient-to-r from-blue-500 to-blue-600",
+      path: "/AddSale",
+      desc: "Record a new sale transaction",
+    },
+    {
+      id: "inventory",
+      label: "Stock Report",
+      icon: Boxes,
+      color: "bg-gradient-to-r from-amber-500 to-amber-600",
+      path: "/stock",
+      desc: "View stock levels and alerts",
+    },
+    {
+      id: "financialLog",
+      label: "Financial Log",
+      icon: FileText,
+      color: "bg-gradient-to-r from-indigo-500 to-indigo-600",
+      path: "/FinancialLogForm",
+      desc: "Record financial transactions",
+    },
+    {
+      id: "categories",
+      label: "Categories",
+      icon: Layers,
+      color: "bg-gradient-to-r from-violet-500 to-violet-600",
+      path: "/categories",
+      desc: "Manage product categories",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-white text-gray-800">
-      <div className="container mx-auto px-4 py-8">
-        {/* Top Bar with Logo and User Menu */}
-        <div className="flex justify-between items-center mb-8">
-          {/* Logo */}
-           <motion.h1
-            className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            {content[language].dashboard}
-          </motion.h1>
-        
-          {/* User Menu */}
-          <div className="flex items-center gap-4">
-            {/* Language Selector */}
-            <motion.div
-              className="flex items-center space-x-2 bg-gray-50 rounded-xl p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Globe size={18} className="text-blue-600" />
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="bg-transparent text-gray-700 focus:outline-none font-medium"
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900">
+      {/* Top Navigation Bar */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo and Brand */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <option value="so">Somali</option>
-                <option value="en">English</option>
-              </select>
-            </motion.div>
-
-            {/* User Dropdown */}
-            {user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User size={16} className="text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium font-bold text-gray-900">
-                      {user.username[0].toUpperCase() + user.username.slice(1)}
-                    </p>
-                   
-                  </div>
-                  <ChevronDown 
-                    size={16} 
-                    className={`text-gray-400 transition-transform ${
-                      userMenuOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-
-                {/* User Menu Dropdown */}
-                <AnimatePresence>
-                  {userMenuOpen && (
-                    <motion.div
-                      className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {/* User Info */}
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user.username}
-                        </p>
-                        <p className="text-xs text-gray-500 bg-violet-500 p-1 text-white rounded-md font-bold w-12">
-                      {user.role[0].toUpperCase() + user.role.slice(1)}
-                    </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {user.email}
-                        </p>
-                      </div>
-                      
-                      {/* Logout Button */}
-                      <button
-                        onClick={handleLogout}
-                        disabled={isLoading}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <Loader className="animate-spin" size={16} />
-                        ) : (
-                          <LogOut size={16} />
-                        )}
-                        <span>{content[language].logout}</span>
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Briefcase className="text-white" size={22} />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    ACCOUNTING DASHBOARD
+                  </h1>
+                  <p className="text-xl font-bold  text-blue-900 ">
+                     <strong className="text-xl font-bold text-blue-900"> Casri </strong> Management System
+                  </p>
+                </div>
               </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/signup"
-                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors"
-                >
-                  <UserPlus className="mr-1" size={18} />
-                  <span>{content[language].signup}</span>
-                </Link>
+            </div>
 
-                <Link
-                  to="/signin"
-                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-                >
-                  <LogIn className="mr-1" size={18} />
-                  <span>{content[language].login}</span>
-                </Link>
+            {/* Search Bar */}
+            <div className="hidden lg:flex flex-1 max-w-xl mx-8">
+              <div className="relative w-full">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search products, sales, reports..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Navigation */}
-          <div className="w-full lg:w-80 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <nav className="flex flex-col gap-3">
-              {tabs.map((tab) => (
-                <div key={tab.id} className="relative">
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative">
+                <Bell size={22} className="text-gray-600" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+
+              {/* User Menu */}
+              {user ? (
+                <div className="relative">
                   <button
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      if (tab.subtabs) toggleTabExpansion(tab.id);
-                    }}
-                    className={`w-full flex items-center justify-between gap-3 p-4 rounded-xl transition-all duration-200 ${
-                      activeTab === tab.id
-                        ? "bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border border-blue-200 shadow-md"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-transparent"
-                    }`}
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-2 hover:border-gray-300 hover:shadow-md transition-all"
                   >
-                    <div className="flex items-center gap-3">
-                      <tab.icon size={22} className={tab.color} />
-                      <span className="font-semibold">{tab.label}</span>
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
+                      <User size={18} className="text-white" />
                     </div>
-                    {tab.subtabs && (
-                      <motion.div
-                        animate={{ rotate: expandedTabs[tab.id] ? 90 : 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <ChevronRight size={18} className="text-gray-400" />
-                      </motion.div>
-                    )}
+                    <div className="text-left hidden md:block">
+                      <p className="text-sm font-bold text-gray-900">
+                        {user.username?.charAt(0).toUpperCase() + user.username?.slice(1) || 'User'}
+                      </p>
+                      <p className="text-xs text-gray-500 bg-gradient-to-r from-blue-100 to-purple-100 px-2 py-0.5 rounded-full font-medium">
+                        {user.role?.charAt(0).toUpperCase() + user.role?.slice(1) || 'Admin'}
+                      </p>
+                    </div>
+                    <ChevronDown
+                      size={16}
+                      className={`text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
+                    />
                   </button>
 
-                  {/* Subtabs */}
+                  {/* User Menu Dropdown */}
                   <AnimatePresence>
-                    {tab.subtabs && expandedTabs[tab.id] && (
+                    {userMenuOpen && (
                       <motion.div
-                        className="ml-4 mt-2 flex flex-col gap-2 border-l-2 border-gray-100 pl-4"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
+                        className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        onClick={() => setUserMenuOpen(false)}
                       >
-                        {tab.subtabs.map((subtab) => (
-                          <Link
-                            key={subtab.id}
-                            to={subtab.path}
-                            className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
-                          >
-                            <subtab.icon size={18} className="text-gray-400" />
-                            <span className="text-sm font-medium">
-                              {subtab.label}
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <p className="text-sm font-bold text-gray-900">{user.username || 'User'}</p>
+                          <p className="text-xs text-gray-500 truncate">{user.email || 'user@example.com'}</p>
+                          <div className="mt-2">
+                            <span className="inline-block px-2 py-1 text-xs font-bold text-blue-600 bg-blue-50 rounded-full">
+                              {user.role || 'Administrator'}
                             </span>
-                          </Link>
-                        ))}
+                          </div>
+                        </div>
+                        
+                        <button
+                          onClick={handleLogout}
+                          disabled={isLoading}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          {isLoading ? (
+                            <Loader className="animate-spin" size={16} />
+                          ) : (
+                            <LogOut size={16} />
+                          )}
+                          <span>Logout</span>
+                        </button>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-              ))}
-            </nav>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/signin"
+                    className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg"
+                  >
+                    <LogIn className="inline mr-2" size={16} />
+                    Login
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
+          {/* Main Tabs Navigation */}
+          <div className="hidden lg:flex items-center justify-center gap-1 mt-4 pb-2">
+            {mainTabs.map((tab) => (
+              <Link
+                key={tab.id}
+                to={tab.path}
+                onClick={() => setActiveTab(tab.id)}
+                className={`group relative flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-300 ${
+                  activeTab === tab.id
+                    ? `${tab.gradient} text-white shadow-lg transform scale-105`
+                    : "text-gray-700 hover:text-black hover:bg-gray-50"
+                }`}
               >
-                {/* Welcome Section */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-8 rounded-2xl shadow-lg border border-blue-100 mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                    {content[language].welcome}
-                  </h2>
-                  <p className="text-gray-600 text-lg">
-                    {content[language].welcomeDesc}
+                <tab.icon size={20} />
+                <span className="font-bold text-sm whitespace-nowrap">
+                  {tab.label}
+                </span>
+                {activeTab === tab.id && (
+                  <motion.div
+                    className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3/4 h-1 bg-white/30 rounded-full"
+                    layoutId="activeTab"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </Link>
+            ))}
+          </div>
+
+          {/* Mobile Tabs Navigation */}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div
+                className="lg:hidden mt-4 pb-4"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <div className="grid grid-cols-2 gap-2">
+                  {mainTabs.map((tab) => (
+                    <Link
+                      key={tab.id}
+                      to={tab.path}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-2 p-3 rounded-xl transition-all ${
+                        activeTab === tab.id
+                          ? `${tab.gradient} text-white shadow-md`
+                          : "bg-gray-50 text-gray-700 hover:text-black hover:bg-gray-100"
+                      }`}
+                    >
+                      <tab.icon size={18} />
+                      <span className="font-bold text-sm">{tab.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </nav>
+
+      {/* Main Content Area */}
+      <div className="container mx-auto px-4 py-8">
+        {/* Show Dashboard Content Only on Dashboard Page */}
+        {location.pathname === "/dashboard" || location.pathname === "/" ? (
+          <>
+            {/* Welcome Section */}
+            <div className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-3xl p-8 mb-8 border border-white/50 backdrop-blur-sm">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex-1">
+                  <motion.h2
+                    className="text-4xl md:text-5xl font-bold text-gray-900 mb-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    Welcome to Accounting Dashboard
+                    {user && (
+                      <span className="block text-2xl md:text-3xl text-blue-600 mt-2">
+                        {user.username?.charAt(0).toUpperCase() + user.username?.slice(1) || 'User'}! 👋
+                      </span>
+                    )}
+                  </motion.h2>
+                  <p className="text-gray-600 text-lg max-w-2xl">
+                    Manage your business finances, inventory, sales, and reports from one centralized platform.
                   </p>
                 </div>
+                <div className="flex gap-4">
+                  <motion.div
+                    className="p-4 bg-white rounded-2xl shadow-lg border border-gray-200"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <Activity className="text-blue-600 mb-2" size={24} />
+                    <p className="text-sm text-gray-600 font-medium">Real-time Updates</p>
+                  </motion.div>
+                  <motion.div
+                    className="p-4 bg-white rounded-2xl shadow-lg border border-gray-200"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <Zap className="text-amber-600 mb-2" size={24} />
+                    <p className="text-sm text-gray-600 font-medium">Quick Actions</p>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
 
-                {/* Dashboard Content */}
-                <DashboardContent language={language} />
-              </motion.div>
-            </AnimatePresence>
-          </div>
+            {/* Quick Access Cards Grid */}
+            <div className="mb-12">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">
+                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Quick Access
+                  </span>
+                </h3>
+                <div className="flex items-center gap-2">
+                  <Target size={20} className="text-blue-600" />
+                  <span className="text-sm font-medium text-gray-600">
+                    6 Quick Actions
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {quickAccessCards.map((card, index) => (
+                  <motion.div
+                    key={card.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ y: -8 }}
+                  >
+                    <Link
+                      to={card.path}
+                      className="group block bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-2xl hover:border-gray-300 transition-all duration-300 overflow-hidden"
+                    >
+                      <div className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className={`${card.color} p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform`}>
+                            <card.icon size={24} className="text-white" />
+                          </div>
+                          <ChevronRight 
+                            size={20} 
+                            className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-2 transition-all" 
+                          />
+                        </div>
+                        <h4 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                          {card.label}
+                        </h4>
+                        <p className="text-gray-600 text-sm">{card.desc}</p>
+                      </div>
+                      <div className="h-1 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"></div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            {/* Dashboard Content */}
+            <DashboardStats />
+          </>
+        ) : (
+          // Render child routes content
+          <Outlet />
+        )}
+      </div>
+
+      {/* Mobile Search */}
+      <div className="lg:hidden fixed bottom-6 left-4 right-4 z-40">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Search products, sales, reports..."
+            className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
       </div>
     </div>
   );
 };
 
-// Dashboard Content Component
-const DashboardContent = ({ language }) => {
+// Dashboard Stats Component
+const DashboardStats = () => {
   const navigate = useNavigate();
-
-  const { products, fetchProducts } = useProductsStore();
+  const { products } = useProductsStore();
   const { sales, fetchSales } = useSalesStore();
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
 
   useEffect(() => {
     fetchSales();
@@ -555,62 +523,104 @@ const DashboardContent = ({ language }) => {
 
   const stats = [
     {
-      label: language === "so" ? "Wadarta Alaabta" : "Total Products",
+      label: "Total Products",
       value: products?.length || 0,
       change: "+12%",
       icon: Package,
-      color: "text-green-600",
+      color: "from-emerald-500 to-emerald-600",
       path: "/products",
+      trend: "up",
     },
     {
-      label: language === "so" ? "Iibka Maanta" : "Today's Sales",
+      label: "Today's Sales",
       value: sales?.length || 0,
       change: "+8%",
       icon: ShoppingCart,
-      color: "text-blue-600",
+      color: "from-rose-500 to-rose-600",
       path: "/DailySales",
+      trend: "up",
     },
     {
-      label: language === "so" ? "Bakhaarka" : "Inventory",
+      label: "Inventory Items",
       value: products?.length || 0,
       change: "-2%",
       icon: Boxes,
-      color: "text-orange-600",
+      color: "from-amber-500 to-amber-600",
       path: "/stock",
+      trend: "down",
     },
     {
-      label: language === "so" ? "Isticmaalayaasha" : "Active Users",
-      value: "-",
+      label: "Active Users",
+      value: "24",
       change: "+5%",
       icon: Users,
-      color: "text-purple-600",
+      color: "from-blue-500 to-blue-600",
       path: "/UserDailySales",
+      trend: "up",
     },
+  ];
+
+  const performanceMetrics = [
+    {
+      title: "Monthly Revenue",
+      value: "$12,458",
+      change: "+24%",
+      icon: TrendingUp,
+      color: "text-emerald-600 bg-emerald-50",
+    },
+    {
+      title: "Low Stock Items",
+      value: products?.filter(p => (p.stock ?? 0) <= (p.lowStockThreshold ?? 5)).length || 0,
+      change: "-8%",
+      icon: Boxes,
+      color: "text-amber-600 bg-amber-50",
+    },
+    {
+      title: "Accounts Receivable",
+      value: "$8,245",
+      change: "+18%",
+      icon: DollarSign,
+      color: "text-blue-600 bg-blue-50",
+    },
+    {
+      title: "Accounts Payable",
+      value: "$3,420",
+      change: "-5%",
+      icon: FileBarChart,
+      color: "text-rose-600 bg-rose-50",
+    },
+  ];
+
+  const recentActivities = [
+    { time: "10:30 AM", action: "New sale recorded", amount: "$450", user: "John D." },
+    { time: "9:45 AM", action: "Product added to inventory", item: "Laptop Pro", user: "Sarah M." },
+    { time: "Yesterday", action: "Monthly report generated", period: "November 2024", user: "System" },
+    { time: "Nov 28", action: "Low stock alert", item: "Wireless Mouse", user: "Auto" },
   ];
 
   const quickActions = [
     {
-      label: language === "so" ? "Abuur Alaab" : "Add Product",
+      label: "Create Product",
       icon: PlusCircle,
-      color: "bg-green-500",
+      color: "bg-gradient-to-r from-emerald-500 to-emerald-600",
       path: "/createProduct",
     },
     {
-      label: language === "so" ? "Diiwaan Iib" : "Record Sale",
+      label: "Record Sale",
       icon: ShoppingCart,
-      color: "bg-blue-500",
-      path: "/DailySales",
+      color: "bg-gradient-to-r from-rose-500 to-rose-600",
+      path: "/AddSale",
     },
     {
-      label: language === "so" ? "Arag Warbixin" : "View Report",
+      label: "View Reports",
       icon: BarChart3,
-      color: "bg-purple-500",
+      color: "bg-gradient-to-r from-blue-500 to-blue-600",
       path: "/reports",
     },
     {
-      label: language === "so" ? "Maaree Bakhaar" : "Manage Stock",
+      label: "Manage Inventory",
       icon: Boxes,
-      color: "bg-orange-500",
+      color: "bg-gradient-to-r from-amber-500 to-amber-600",
       path: "/stock",
     },
   ];
@@ -620,63 +630,135 @@ const DashboardContent = ({ language }) => {
       {/* Statistics Grid */}
       <div>
         <h3 className="text-2xl font-bold text-gray-900 mb-6">
-          {language === "so" ? "Tirakoobka" : "Statistics"}
+          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Business Overview
+          </span>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
-              className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow cursor-pointer"
-              whileHover={{ y: -5 }}
+              className="bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer"
+              whileHover={{ y: -8 }}
               onClick={() => navigate(stat.path)}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <stat.icon size={24} className={stat.color} />
-                <span
-                  className={`text-sm font-semibold ${
-                    stat.change.startsWith("+")
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {stat.change}
-                </span>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className={`p-3 rounded-xl bg-gradient-to-r ${stat.color}`}>
+                    <stat.icon size={24} className="text-white" />
+                  </div>
+                  <div className={`text-sm font-bold ${stat.trend === 'up' ? 'text-emerald-600' : 'text-rose-600'} ${stat.trend === 'up' ? 'bg-emerald-50' : 'bg-rose-50'} px-3 py-1 rounded-full`}>
+                    {stat.change}
+                    <TrendingUp size={14} className="inline ml-1" />
+                  </div>
+                </div>
+                <h4 className="text-3xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                  {stat.value}
+                </h4>
+                <p className="text-gray-600 font-medium">{stat.label}</p>
               </div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-1">
-                {stat.value}
-              </h4>
-              <p className="text-gray-600 text-sm">{stat.label}</p>
+              <div className="h-1 bg-gradient-to-r from-gray-200 to-gray-200 group-hover:from-blue-500 group-hover:to-purple-500 transition-all duration-500"></div>
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Performance Metrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          <h3 className="text-2xl font-bold text-gray-900">
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Financial Metrics
+            </span>
+          </h3>
+          <div className="grid grid-cols-2 gap-6">
+            {performanceMetrics.map((metric, index) => (
+              <motion.div
+                key={metric.title}
+                className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 + 0.4 }}
+                whileHover={{ scale: 1.02 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-3 rounded-xl ${metric.color}`}>
+                    <metric.icon size={20} />
+                  </div>
+                  <span className={`text-sm font-bold ${metric.change.startsWith('+') ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {metric.change}
+                  </span>
+                </div>
+                <h4 className="text-2xl font-bold text-gray-900 mb-2">{metric.value}</h4>
+                <p className="text-gray-600 font-medium">{metric.title}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-gray-900">
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Recent Activity
+              </span>
+            </h3>
+            <button 
+              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              onClick={() => navigate("/reports")}
+            >
+              View All
+            </button>
+          </div>
+          <div className="space-y-4">
+            {recentActivities.map((activity, index) => (
+              <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                <div>
+                  <p className="font-medium text-gray-900">{activity.action}</p>
+                  <p className="text-sm text-gray-500">{activity.time} • {activity.user}</p>
+                </div>
+                {activity.amount && (
+                  <span className="font-bold text-emerald-600">{activity.amount}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions Grid */}
       <div>
         <h3 className="text-2xl font-bold text-gray-900 mb-6">
-          {language === "so" ? "Ficilada Degdegga ah" : "Quick Actions"}
+          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Quick Actions
+          </span>
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action, index) => (
             <motion.button
               key={action.label}
-              className="bg-white p-5 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-200 text-left group"
+              className="group bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-2xl hover:border-blue-200 transition-all duration-300 text-left"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate(action.path)}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 + 0.4 }}
+              transition={{ delay: index * 0.1 + 0.6 }}
             >
-              <div
-                className={`w-12 h-12 ${action.color} rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
-              >
-                <action.icon size={24} className="text-white" />
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-14 h-14 ${action.color} rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+                  <action.icon size={26} className="text-white" />
+                </div>
+                <ChevronRight 
+                  size={20} 
+                  className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-2 transition-all" 
+                />
               </div>
-              <span className="font-semibold text-gray-900">
+              <span className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                 {action.label}
               </span>
             </motion.button>

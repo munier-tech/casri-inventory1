@@ -1,575 +1,891 @@
-import { useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  FiShoppingCart, FiPlus, FiMinus, FiX, FiRefreshCw, FiSearch, FiArrowLeft, 
-  FiCalendar, FiClock, FiDollarSign, FiPackage, FiTag, FiBarChart2
+import { toast } from "react-hot-toast";
+import {
+  FiSearch,
+  FiPlus,
+  FiMinus,
+  FiX,
+  FiTrash2,
+  FiShoppingCart,
+  FiDollarSign, FiCalendar,
+  FiPackage, FiPrinter, FiPercent, FiSmartphone
 } from "react-icons/fi";
-import { AlertTriangle, XCircle } from "lucide-react";
+import {
+  BsCashCoin
+} from "react-icons/bs";
 import useProductsStore from "../store/useProductsStore";
-import useCategoryStore from "../store/useCategoryStore";
 import useSalesStore from "../store/UseSalesStore";
+import { DollarSign } from "lucide-react";
 
+const CreateSaleNew = () => {
+  const { fetchProducts } = useProductsStore();
+  const {
+    searchProducts,
+    searchResults,
+    addProductToSale,
+    selectedProducts,
+    updateProductQuantity,
+    updateProductPrice,
+    updateProductDiscount,
+    removeProductFromSale,
+    clearSelectedProducts,
+    getSaleCalculations,
+    createSale,
+    createSaleByDate,
+    loading,
+    fetchDailySales,
+    salesByDate
+  } = useSalesStore();
 
-const CreateSale = () => {
-  const { products = [], fetchProducts } = useProductsStore();
-  const { categories = [], fetchCategories } = useCategoryStore();
-  const { createSale, createSaleByDate, dailySales, fetchDailySales } = useSalesStore();
-
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [quantity, setQuantity] = useState(1);
-  const [sellingCost, setSellingCost] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // State management
   const [searchTerm, setSearchTerm] = useState("");
-  const [categorySearchTerm, setCategorySearchTerm] = useState("");
-  const [view, setView] = useState("categories");
-  const [activeTab, setActiveTab] = useState("today");
+  const [saleType, setSaleType] = useState("today"); // "today" or "date"
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [amountPaid, setAmountPaid] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [discountType, setDiscountType] = useState("percentage"); // "percentage" or "amount"
+  const [discountValue, setDiscountValue] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  
+  // Refs
+  const searchInputRef = useRef(null);
+  const amountPaidInputRef = useRef(null);
+  const searchResultsRef = useRef(null);
 
-  const categoryColors = [
-    "from-blue-500 to-purple-500",
-    "from-green-500 to-emerald-500",
-    "from-orange-500 to-amber-500",
-    "from-pink-500 to-rose-500",
-    "from-indigo-500 to-blue-600",
-    "from-teal-500 to-cyan-500",
-    "from-yellow-500 to-orange-500",
-    "from-red-500 to-pink-500"
-  ];
-
-  const stockStatusColors = {
-    high: "text-green-600 bg-green-50 border-green-200",
-    low: "text-amber-600 bg-amber-50 border-amber-200",
-    out: "text-red-600 bg-red-50 border-red-200"
+  // Calculations
+  const calculations = getSaleCalculations();
+  
+  // Calculate expected money for each product
+  const calculateExpected = (product) => {
+    const discountAmount = (product.sellingPrice * product.discount) / 100;
+    const priceAfterDiscount = product.sellingPrice - discountAmount;
+    return priceAfterDiscount * product.quantity;
   };
 
+  // Calculate grand total with discount
+  const discountAmount = discountType === "percentage" 
+    ? (parseFloat(discountValue) || 0) / 100 * calculations.subtotal
+    : parseFloat(discountValue) || 0;
+  const grandTotal = calculations.subtotal - discountAmount;
+  const changeAmount = parseFloat(amountPaid || 0) - grandTotal;
+
+  // Fetch initial data
   useEffect(() => {
     fetchProducts();
-    fetchCategories();
     fetchDailySales();
-  }, [fetchProducts, fetchCategories, fetchDailySales]);
+    
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [fetchProducts, fetchDailySales]);
 
+  // Search products
   useEffect(() => {
-    if (selectedCategory) {
-      let filtered = products.filter((p) => p.category?._id === selectedCategory);
-
-      if (searchTerm) {
-        filtered = filtered.filter(product =>
-          product.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-
-      setFilteredProducts(filtered);
+    if (searchTerm.trim()) {
+      const debounceTimer = setTimeout(() => {
+        searchProducts(searchTerm);
+        setShowSearchResults(true);
+      }, 300);
+      return () => clearTimeout(debounceTimer);
     } else {
-      setFilteredProducts([]);
+      setShowSearchResults(false);
     }
-    setSelectedProduct(null);
-    setQuantity(1);
-  }, [selectedCategory, products, searchTerm]);
+  }, [searchTerm, searchProducts]);
 
+  // Click outside to close search results
   useEffect(() => {
-    if (selectedProduct) {
-      setQuantity(1);
-      setSellingCost(selectedProduct.cost || 0);
-    }
-  }, [selectedProduct]);
-
-  const handleSubmit = async () => {
-    if (!selectedProduct) return toast.error("Fadlan dooro alaab");
-    if (quantity < 1) return toast.error("Tirada waa inay ka weyn tahay 0");
-    if (quantity > selectedProduct.stock) return toast.error("Tirada alaabta way ka dhamaatay kaydka");
-
-    setIsSubmitting(true);
-    try {
-      if (activeTab === "today") {
-        await createSale({
-          productId: selectedProduct._id,
-          quantity,
-          sellingCost,
-        });
-      } else {
-        await createSaleByDate({
-          productId: selectedProduct._id,
-          quantity,
-          sellingCost,
-          saleDate,
-        });
+    const handleClickOutside = (event) => {
+      if (searchResultsRef.current && !searchResultsRef.current.contains(event.target)) {
+        setShowSearchResults(false);
       }
-      
-      toast.success("Iibka si guul leh ayaa loo abuuray");
-      await fetchProducts();
-      await fetchDailySales();
-      setSelectedProduct(null);
-      setQuantity(1);
-      setSellingCost(0);
-      setSearchTerm("");
-    } catch (error) {
-      toast.error(error?.response?.data?.error || "Khalad ayaa dhacay");
-    } finally {
-      setIsSubmitting(false);
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle product selection
+  const handleProductSelect = (product) => {
+    if (product.stock <= 0) {
+      toast.error(`${product.name} is out of stock`);
+      return;
+    }
+    
+    addProductToSale(product, 1, product.price || product.cost);
+    setSearchTerm("");
+    setShowSearchResults(false);
+    toast.success(`${product.name} added to sale`);
+    
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
     }
   };
 
-  const getStockStatus = (stock) => {
-    if (stock === 0) return { status: "out", text: "Dhamaatay", icon: XCircle };
-    if (stock <= 5) return { status: "low", text: `Sii Dhamaanaya (${stock})`, icon: AlertTriangle };
-    return { status: "high", text: `Kaydka: ${stock}`, icon: FiPackage };
+  // Handle quantity changes
+  const handleQuantityChange = (productId, quantity) => {
+    if (quantity >= 1) {
+      updateProductQuantity(productId, quantity);
+    }
   };
 
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category._id);
-    setView("products");
-    setSearchTerm("");
+  const handlePriceChange = (productId, price) => {
+    if (price >= 0) {
+      updateProductPrice(productId, parseFloat(price));
+    }
   };
 
-  const handleBackToCategories = () => {
-    setView("categories");
-    setSelectedCategory("");
-    setSelectedProduct(null);
-    setSearchTerm("");
-    setCategorySearchTerm("");
+  const handleDiscountChange = (productId, discount) => {
+    if (discount >= 0 && discount <= 100) {
+      updateProductDiscount(productId, parseFloat(discount));
+    }
   };
 
-  const incrementQuantity = () => {
-    if (selectedProduct && quantity < selectedProduct.stock) setQuantity(quantity + 1);
-  };
+  // Calculate expected money for all products
+  const totalExpected = selectedProducts.reduce((sum, product) => {
+    return sum + calculateExpected(product);
+  }, 0);
 
-  const decrementQuantity = () => {
-    if (quantity > 1) setQuantity(quantity - 1);
-  };
+  // Complete sale
+  const handleCompleteSale = async () => {
+    if (selectedProducts.length === 0) {
+      toast.error("Please add at least one product");
+      return;
+    }
 
-  const refreshProducts = async () => {
+    if (!amountPaid || parseFloat(amountPaid) < grandTotal) {
+      toast.error(`Amount paid must be at least $${grandTotal.toFixed(2)}`);
+      amountPaidInputRef.current?.focus();
+      return;
+    }
+
+    const saleData = {
+      products: selectedProducts.map(product => ({
+        productId: product._id,
+        quantity: product.quantity,
+        sellingPrice: product.sellingPrice,
+        discount: product.discount
+      })),
+      discountPercentage: discountType === "percentage" ? parseFloat(discountValue) || 0 : 0,
+      discountAmount: discountType === "amount" ? parseFloat(discountValue) || 0 : 0,
+      paymentMethod,
+      amountPaid: parseFloat(amountPaid),
+      ...(saleType === "date" && { saleDate }),
+      ...(customerName && { customerName }),
+      ...(customerPhone && { customerPhone }),
+      ...(notes && { notes })
+    };
+
     try {
-      await fetchProducts();
-      await fetchDailySales();
-      toast.success("Alaabta si guul leh ayaa loo cusboonaysiiyay");
+      if (saleType === "date") {
+        await createSaleByDate(saleData);
+        toast.success(`Sale recorded for ${new Date(saleDate).toLocaleDateString()}`);
+      } else {
+        await createSale(saleData);
+        toast.success("Sale completed successfully!");
+      }
+
+      // Clear form
+      clearSelectedProducts();
+      setAmountPaid("");
+      setCustomerName("");
+      setCustomerPhone("");
+      setNotes("");
+      setDiscountValue("");
+      setSearchTerm("");
+
+      // Fetch updated sales
+      fetchDailySales();
+
+      // Focus back to search
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
     } catch (error) {
-      toast.error("Khalad ayaa dhacay marka la cusboonaysiinayo alaabta");
+      toast.error(error.message || "Failed to complete sale");
     }
   };
 
-  const getCategoryColor = (index) => {
-    return categoryColors[index % categoryColors.length];
+  // Print receipt
+  const handlePrintReceipt = () => {
+    if (selectedProducts.length === 0) {
+      toast.error("No products to print receipt");
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Sale Receipt</title>
+        <style>
+          body { font-family: 'Courier New', monospace; margin: 20px; }
+          .receipt { width: 280px; margin: 0 auto; }
+          .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+          .header h2 { margin: 0; font-size: 18px; }
+          .header p { margin: 3px 0; font-size: 12px; }
+          .item-row { display: flex; justify-content: space-between; margin: 4px 0; font-size: 12px; }
+          .item-row .name { flex: 2; }
+          .item-row .qty { text-align: center; flex: 0.5; }
+          .item-row .price { text-align: right; flex: 1; }
+          .divider { border-top: 1px dashed #000; margin: 10px 0; }
+          .total-row { font-weight: bold; font-size: 14px; margin-top: 5px; }
+          .footer { text-align: center; margin-top: 20px; font-size: 10px; }
+          .bold { font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="header">
+            <h2>INVENTORY SYSTEM</h2>
+            <p>${saleType === "date" ? new Date(saleDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+            <p>${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+          </div>
+          <div class="item-row bold">
+            <div class="name">PRODUCT</div>
+            <div class="qty">QTY</div>
+            <div class="price">AMOUNT</div>
+          </div>
+          <div class="divider"></div>
+          ${selectedProducts.map(item => `
+            <div class="item-row">
+              <div class="name">${item.name}</div>
+              <div class="qty">${item.quantity}</div>
+              <div class="price">$${(item.sellingPrice * item.quantity).toFixed(2)}</div>
+            </div>
+          `).join('')}
+          <div class="divider"></div>
+          <div class="item-row">
+            <div>Subtotal:</div>
+            <div>$${calculations.subtotal.toFixed(2)}</div>
+          </div>
+          <div class="item-row">
+            <div>Discount:</div>
+            <div>-$${discountAmount.toFixed(2)}</div>
+          </div>
+          <div class="item-row total-row">
+            <div>TOTAL:</div>
+            <div>$${grandTotal.toFixed(2)}</div>
+          </div>
+          <div class="item-row">
+            <div>Paid:</div>
+            <div>$${parseFloat(amountPaid || 0).toFixed(2)}</div>
+          </div>
+          <div class="item-row">
+            <div>Change:</div>
+            <div>$${changeAmount >= 0 ? changeAmount.toFixed(2) : "0.00"}</div>
+          </div>
+          <div class="item-row">
+            <div>Payment:</div>
+            <div>${paymentMethod.toUpperCase()}</div>
+          </div>
+          ${customerName ? `<div class="item-row"><div>Customer:</div><div>${customerName}</div></div>` : ''}
+          <div class="footer">
+            <p>Thank you for your business!</p>
+            <p>Receipt #: ${Date.now().toString().slice(-6)}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
-  const filteredCategories = categories.filter(category => 
-    category.name.toLowerCase().includes(categorySearchTerm.toLowerCase())
-  );
+  // Payment methods - updated with Zaad, Edahab, Cash
+  const paymentMethods = [
+    { value: "cash", label: "Cash", icon: <BsCashCoin className="inline mr-2" />, color: "bg-green-50 border-green-200 text-green-600" },
+    { value: "zaad", label: "Zaad", icon: <FiSmartphone className="inline mr-2" />, color: "bg-blue-50 border-blue-200 text-blue-600" },
+    { value: "edahab", label: "Edahab", icon: <DollarSign className="inline mr-2" />, color: "bg-purple-50 border-purple-200 text-purple-600" }
+  ];
 
-  const renderCategoriesView = () => (
-    <div>
-      <div className="relative w-full md:w-80 mb-8">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <FiSearch className="h-5 w-5 text-gray-400" />
-        </div>
-        <input
-          type="text"
-          placeholder="Raadi qaybo..."
-          value={categorySearchTerm}
-          onChange={(e) => setCategorySearchTerm(e.target.value)}
-          className="pl-10 pr-4 py-3 w-full bg-white border border-gray-200 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
-        />
-        {categorySearchTerm && (
-          <button
-            onClick={() => setCategorySearchTerm("")}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-          >
-            <FiX className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-          </button>
-        )}
-      </div>
-
-      <motion.div
-        className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-      >
-        {filteredCategories.length > 0 ? (
-          filteredCategories.map((cat, index) => {
-            const productCount = products.filter(p => p.category?._id === cat._id).length;
-            return (
-              <motion.div
-                key={cat._id}
-                className="relative cursor-pointer rounded-2xl overflow-hidden shadow-lg group bg-white border border-gray-100 hover:border-blue-200 transition-all duration-300"
-                onClick={() => handleCategoryClick(cat)}
-                whileHover={{ scale: 1.03, y: -5 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <div className={`h-32 w-full bg-gradient-to-br ${getCategoryColor(index)} flex items-center justify-center`}>
-                  <FiPackage className="h-12 w-12 text-white opacity-90" />
-                </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">{cat.name}</h3>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded-lg">
-                      {productCount} alaab{productCount !== 1 ? 's' : ''}
-                    </span>
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })
-        ) : (
-          <div className="col-span-full text-center py-12 bg-gray-50 rounded-2xl border border-gray-200">
-            <FiPackage className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">
-              {categorySearchTerm ? `Qaybo lama helin "${categorySearchTerm}"` : "Qaybo lama helin"}
-            </p>
-          </div>
-        )}
-      </motion.div>
-    </div>
-  );
-
-  const renderProductsView = () => {
-    const currentCategory = categories.find((c) => c._id === selectedCategory);
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
-      >
-        <div className="flex items-center mb-6">
-          <motion.button
-            onClick={handleBackToCategories}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center p-2 mr-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
-          >
-            <FiArrowLeft className="h-5 w-5 text-gray-600" />
-          </motion.button>
-          <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {currentCategory?.name || "Alaabooyinka"} - Alaabooyinka
-            </h2>
-            <p className="text-gray-600">
-              {filteredProducts.length} alaab ee la helay
-              {searchTerm && ` oo ku jira "${searchTerm}"`}
-            </p>
-          </div>
-        </div>
-
-        <div className="relative w-full md:w-80 mb-6">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiSearch className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            placeholder="Raadi alaab..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-3 w-full bg-white border border-gray-200 rounded-xl text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            >
-              <FiX className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-            </button>
-          )}
-        </div>
-
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
-            <FiSearch className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">
-              {searchTerm ? `Wax alaab ah lagama helin "${searchTerm}"` : "Alaab lagama helin qaybtaan."}
-            </p>
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="mt-4 px-4 py-2 bg-white border border-gray-300 hover:border-gray-400 rounded-xl text-sm text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Ka saar baaritaanka
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filteredProducts.map((product) => {
-              const stockInfo = getStockStatus(product.stock);
-              const IconComponent = stockInfo.icon;
-              
-              return (
-                <motion.div
-                  key={product._id}
-                  className={`bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 shadow-lg border border-gray-100 hover:shadow-xl ${
-                    selectedProduct?._id === product._id
-                      ? "ring-2 ring-blue-400 transform scale-105 border-blue-200"
-                      : "hover:border-blue-200"
-                  }`}
-                  onClick={() => setSelectedProduct(product)}
-                  whileHover={{ y: -5 }}
-                  layoutId={`product-${product._id}`}
-                >
-                  <div className="p-4 border-b border-gray-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                        <FiPackage className="h-5 w-5 text-white" />
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium border ${stockStatusColors[stockInfo.status]}`}>
-                        <IconComponent className="h-3 w-3 inline mr-1" />
-                        {stockInfo.text}
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2">{product.name}</h3>
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold text-blue-600 flex items-center">
-                        <FiDollarSign className="h-4 w-4 mr-1" />
-                        {product.cost}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-gray-50">
-                    <div className="flex justify-between items-center text-sm text-gray-600">
-                      <span>Qiimaha:</span>
-                      <span className="font-medium">${product.cost}</span>
-                    </div>
-                    {product.stock > 0 && (
-                      <div className="mt-2 bg-white rounded-lg p-2 border border-gray-200">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>Kaydka hada:</span>
-                          <span>{product.stock} Xabo</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full ${
-                              product.stock > 10 ? 'bg-green-500' : 
-                              product.stock > 5 ? 'bg-amber-500' : 'bg-red-500'
-                            }`}
-                            style={{ 
-                              width: `${Math.min(100, (product.stock / Math.max(product.stock, 20)) * 100)}%` 
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </motion.div>
-    );
+  // Get stock status color
+  const getStockStatusColor = (stock, threshold = 5) => {
+    if (stock === 0) return "bg-red-100 text-red-800";
+    if (stock <= threshold) return "bg-amber-100 text-amber-800";
+    return "bg-green-100 text-green-800";
   };
 
-  const renderDateSelector = () => (
-    <div className="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-200">
-      <label className="block text-gray-700 mb-2 font-medium flex items-center">
-        <FiCalendar className="inline mr-2 text-blue-500" />
-        Taariikhda Iibka
-      </label>
-      <input
-        type="date"
-        value={saleDate}
-        onChange={(e) => setSaleDate(e.target.value)}
-        className="w-full p-3 bg-white border border-gray-300 rounded-xl text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-      />
-      <p className="text-gray-600 text-sm mt-2">
-        Dooro taariikhda aad rabto inaad iibka ku keydiso
-      </p>
-    </div>
-  );
+  // Calculate payment method icon
+  const getPaymentIcon = (method) => {
+    switch (method) {
+      case 'cash': return <BsCashCoin className="h-5 w-5" />;
+      case 'zaad': return <FiSmartphone className="h-5 w-5" />;
+      case 'edahab': return <DollarSign className="h-5 w-5" />;
+      default: return <BsCashCoin className="h-5 w-5" />;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <div className="max-w-7xl mx-auto">
+        
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-          <motion.div
-            className="flex items-center gap-4"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-xl shadow-lg">
-              <FiShoppingCart className="h-8 w-8 text-white" />
-            </div>
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Iibi Alaab Cusub
-              </h1>
-              <p className="text-gray-600">Dooro qaybta oo iibi alaabta</p>
+              <h1 className="text-3xl font-bold text-gray-900">New Sale</h1>
+              <p className="text-gray-600">Create and manage sales transactions</p>
             </div>
-          </motion.div>
-
-          <motion.button
-            onClick={refreshProducts}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl text-white font-medium shadow-lg transition-all duration-300"
-            title="Cusboonaysii alaabta"
-          >
-            <FiRefreshCw className="w-5 h-5 mr-2" />
-            Cusboonaysii
-          </motion.button>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Wadarta Alaabta</p>
-                <p className="text-2xl font-bold text-gray-900">{products.length}</p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-xl">
-                <FiPackage className="h-6 w-6 text-blue-500" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Wadarta Qaybaha</p>
-                <p className="text-2xl font-bold text-gray-900">{categories.length}</p>
-              </div>
-              <div className="p-3 bg-green-50 rounded-xl">
-                <FiTag className="h-6 w-6 text-green-500" />
-              </div>
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handlePrintReceipt}
+                disabled={selectedProducts.length === 0}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                <FiPrinter className="mr-2" />
+                Print Receipt
+              </button>
+              
+              <button
+                onClick={handleCompleteSale}
+                disabled={loading || selectedProducts.length === 0 || !amountPaid || parseFloat(amountPaid) < grandTotal}
+                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center font-semibold"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <FiShoppingCart className="mr-2" />
+                    Complete Sale
+                  </>
+                )}
+              </button>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm">Iibka Maanta</p>
-                <p className="text-2xl font-bold text-gray-900">{dailySales?.length || 0}</p>
-              </div>
-              <div className="p-3 bg-orange-50 rounded-xl">
-                <FiBarChart2 className="h-6 w-6 text-orange-500" />
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex mb-6 bg-white rounded-xl p-1 border border-gray-200 shadow-sm">
-          <button
-            onClick={() => setActiveTab("today")}
-            className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
-              activeTab === "today"
-                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
-                : "text-gray-600 hover:text-blue-600"
-            }`}
-          >
-            <FiClock className="inline mr-2" />
-            Iibka Maanta
-          </button>
-          <button
-            onClick={() => setActiveTab("date")}
-            className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
-              activeTab === "date"
-                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
-                : "text-gray-600 hover:text-blue-600"
-            }`}
-          >
-            <FiCalendar className="inline mr-2" />
-            Iibka Taariikhda
-          </button>
-        </div>
-
-        {/* Date Selector for Date Tab */}
-        {activeTab === "date" && renderDateSelector()}
-
-        {view === "categories" ? renderCategoriesView() : renderProductsView()}
-
-        {/* Selected Product Panel */}
-        <AnimatePresence>
-          {selectedProduct && (
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
-              transition={{ duration: 0.3 }}
-              className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-6 shadow-2xl"
+          {/* Sale Type Tabs */}
+          <div className="flex mb-6 bg-white rounded-xl p-1 border border-gray-200 shadow-sm max-w-md">
+            <button
+              onClick={() => setSaleType("today")}
+              className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
+                saleType === "today"
+                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                  : "text-gray-600 hover:text-blue-600"
+              }`}
             >
-              <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                    <FiPackage className="h-8 w-8 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">{selectedProduct.name}</h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-blue-600 font-medium">Qiimaha: $</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={sellingCost}
-                        onChange={(e) => setSellingCost(parseFloat(e.target.value) || 0)}
-                        className="w-24 p-2 rounded-lg bg-gray-50 border border-gray-300 text-gray-800 focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-gray-600 text-sm">Kaydka hada:</span>
-                      <span className={`text-sm font-medium ${
-                        selectedProduct.stock === 0 ? 'text-red-600' : 
-                        selectedProduct.stock <= 5 ? 'text-amber-600' : 'text-green-600'
-                      }`}>
-                        {selectedProduct.stock}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              Today's Sale
+            </button>
+            <button
+              onClick={() => setSaleType("date")}
+              className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
+                saleType === "date"
+                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
+                  : "text-gray-600 hover:text-blue-600"
+              }`}
+            >
+              Sale by Date
+            </button>
+          </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center bg-gray-50 rounded-xl border border-gray-300">
-                    <button
-                      onClick={decrementQuantity}
-                      disabled={quantity <= 1}
-                      className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-30 transition-colors"
-                    >
-                      <FiMinus />
-                    </button>
-                    <span className="px-4 py-2 text-lg font-medium text-gray-900">{quantity}</span>
-                    <button
-                      onClick={incrementQuantity}
-                      disabled={quantity >= selectedProduct.stock}
-                      className="p-2 text-gray-500 hover:text-gray-700 disabled:opacity-30 transition-colors"
-                    >
-                      <FiPlus />
-                    </button>
-                  </div>
-
-                  <div className="text-center min-w-[120px]">
-                    <p className="text-lg font-bold text-blue-600">
-                      ${(sellingCost * quantity).toFixed(2)}
-                    </p>
-                    <p className="text-xs text-gray-500">Wadarta</p>
-                  </div>
-
-                  <button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting || quantity > selectedProduct.stock || quantity < 1}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl font-semibold text-white flex items-center disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300"
-                  >
-                    {isSubmitting ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    ) : (
-                      <>
-                        <FiShoppingCart className="mr-2" />
-                        iibi Alaabta
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+          {/* Date Selector for Date Tab */}
+          {saleType === "date" && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 bg-white p-4 rounded-xl border border-blue-200 shadow-sm max-w-md"
+            >
+              <label className="block text-gray-700 mb-2 font-medium flex items-center">
+                <FiCalendar className="inline mr-2 text-blue-500" />
+                Select Sale Date
+              </label>
+              <input
+                type="date"
+                value={saleDate}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setSaleDate(e.target.value)}
+                className="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </motion.div>
           )}
-        </AnimatePresence>
+        </div>
+
+        {/* Main Content - Split Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Left Panel - Product Search & Selection (2/3 width) */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Product Search */}
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+              <div className="relative" ref={searchResultsRef}>
+                <div className="flex items-center mb-4">
+                  <FiSearch className="text-gray-400 mr-2" />
+                  <h2 className="text-lg font-semibold text-gray-800">Search Products</h2>
+                </div>
+                
+                <div className="relative">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search product by name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-white placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <FiSearch className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                  
+                  {searchTerm && (
+                    <button
+                      onClick={() => {
+                        setSearchTerm("");
+                        setShowSearchResults(false);
+                      }}
+                      className="absolute right-3 top-3.5"
+                    >
+                      <FiX className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Search Results */}
+                <AnimatePresence>
+                  {showSearchResults && searchResults.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-96 overflow-y-auto"
+                    >
+                      {searchResults.map((product) => (
+                        <div
+                          key={product._id}
+                          onClick={() => handleProductSelect(product)}
+                          className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <FiPackage className="h-4 w-4 text-gray-400 mr-2" />
+                              <div>
+                                <p className="font-medium text-gray-800">{product.name}</p>
+                                <p className="text-sm text-gray-500">Price: ${product.price || product.cost}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 rounded-full ${getStockStatusColor(product.stock, product.lowStockThreshold)}`}>
+                                Stock: {product.stock}
+                              </span>
+                              <FiPlus className="h-4 w-4 text-blue-500" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Search Tips */}
+              <div className="mt-4 text-sm text-gray-500">
+                <p>Type to search products. Click on a product to add it to the sale.</p>
+              </div>
+            </div>
+
+            {/* Selected Products Table */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+                    <FiShoppingCart className="mr-2" />
+                    Selected Products ({selectedProducts.length})
+                  </h2>
+                  {selectedProducts.length > 0 && (
+                    <button
+                      onClick={clearSelectedProducts}
+                      className="text-sm text-red-600 hover:text-red-700 flex items-center"
+                    >
+                      <FiTrash2 className="mr-1 h-4 w-4" />
+                      Clear All
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount %</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {selectedProducts.length > 0 ? (
+                      selectedProducts.map((product) => {
+                        const expected = calculateExpected(product);
+                        return (
+                          <tr key={product._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <FiPackage className="h-5 w-5 text-gray-400 mr-2" />
+                                <div>
+                                  <p className="font-medium text-gray-900">{product.name}</p>
+                                  <p className="text-sm text-gray-500">Cost: ${product.cost?.toFixed(2) || '0.00'}</p>
+                                </div>
+                              </div>
+                            </td>
+                            
+                            <td className="px-6 py-4">
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleQuantityChange(product._id, product.quantity - 1)}
+                                  className="p-1 rounded hover:bg-gray-200"
+                                  disabled={product.quantity <= 1}
+                                >
+                                  <FiMinus className="h-4 w-4" />
+                                </button>
+                                <input
+                                  type="number"
+                                  value={product.quantity}
+                                  onChange={(e) => handleQuantityChange(product._id, parseInt(e.target.value) || 1)}
+                                  className="w-16 p-1 text-center border border-gray-300 rounded"
+                                  min="1"
+                                />
+                                <button
+                                  onClick={() => handleQuantityChange(product._id, product.quantity + 1)}
+                                  className="p-1 rounded hover:bg-gray-200"
+                                >
+                                  <FiPlus className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                            
+                            <td className="px-6 py-4">
+                              <input
+                                type="number"
+                                value={product.sellingPrice}
+                                onChange={(e) => handlePriceChange(product._id, parseFloat(e.target.value) || 0)}
+                                className="w-24 p-2 border border-gray-300 rounded"
+                                min="0"
+                                step="0.01"
+                              />
+                            </td>
+                            
+                            <td className="px-6 py-4 font-medium text-gray-900">
+                              ${(product.sellingPrice * product.quantity).toFixed(2)}
+                            </td>
+                            
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <input
+                                  type="number"
+                                  value={product.discount || 0}
+                                  onChange={(e) => handleDiscountChange(product._id, parseFloat(e.target.value) || 0)}
+                                  className="w-20 p-2 border border-gray-300 rounded"
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                />
+                                <span className="ml-1 text-gray-500">%</span>
+                              </div>
+                            </td>
+                            
+                            <td className="px-6 py-4 font-medium text-green-600">
+                              ${expected.toFixed(2)}
+                            </td>
+                            
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() => removeProductFromSale(product._id)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                              >
+                                <FiTrash2 className="h-5 w-5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                          <FiPackage className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                          <p>No products selected. Search and add products above.</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel - Sale Summary & Payment (1/3 width) */}
+          <div className="space-y-6">
+            
+            {/* Sale Summary */}
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Sale Summary</h2>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-medium">${calculations.subtotal.toFixed(2)}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Items:</span>
+                  <span className="font-medium">{calculations.itemCount}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Quantity:</span>
+                  <span className="font-medium">{calculations.totalQuantity}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Expected:</span>
+                  <span className="font-medium text-green-600">${totalExpected.toFixed(2)}</span>
+                </div>
+                
+                {/* Discount Input */}
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-600">Discount:</span>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setDiscountType("percentage")}
+                        className={`px-2 py-1 text-sm rounded ${discountType === "percentage" ? 'bg-blue-100 text-blue-600' : 'text-gray-500'}`}
+                      >
+                        %
+                      </button>
+                      <button
+                        onClick={() => setDiscountType("amount")}
+                        className={`px-2 py-1 text-sm rounded ${discountType === "amount" ? 'bg-blue-100 text-blue-600' : 'text-gray-500'}`}
+                      >
+                        $
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    {discountType === "percentage" ? (
+                      <FiPercent className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    ) : (
+                      <FiDollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    )}
+                    <input
+                      type="number"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+                      placeholder={discountType === "percentage" ? "Discount %" : "Discount Amount"}
+                      min="0"
+                      max={discountType === "percentage" ? "100" : calculations.subtotal}
+                      step={discountType === "percentage" ? "0.1" : "0.01"}
+                    />
+                  </div>
+                  {discountType === "percentage" && discountValue > 0 && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Amount: ${((parseFloat(discountValue) || 0) / 100 * calculations.subtotal).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Discount Amount:</span>
+                  <span className="font-medium text-red-600">-${discountAmount.toFixed(2)}</span>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-800">Grand Total:</span>
+                    <span className="text-2xl font-bold text-blue-600">${grandTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Section */}
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Payment Details</h2>
+              
+              <div className="space-y-4">
+                {/* Payment Method */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {paymentMethods.map((method) => (
+                      <button
+                        key={method.value}
+                        onClick={() => setPaymentMethod(method.value)}
+                        className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${
+                          paymentMethod === method.value
+                            ? `${method.color.split(' ')[0]} border-2 ${method.color.split(' ')[1]} ${method.color.split(' ')[2]}`
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        <div className="mb-1">
+                          {method.icon}
+                        </div>
+                        <span className="text-sm font-medium">{method.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Selected Payment Method Display */}
+                <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center">
+                    {getPaymentIcon(paymentMethod)}
+                    <span className="ml-2 font-medium capitalize">{paymentMethod}</span>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Selected
+                  </div>
+                </div>
+                
+                {/* Amount Paid */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount Paid</label>
+                  <div className="relative">
+                    <FiDollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <input
+                      ref={amountPaidInputRef}
+                      type="number"
+                      value={amountPaid}
+                      onChange={(e) => setAmountPaid(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter amount paid"
+                      min={grandTotal}
+                      step="0.01"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-sm text-gray-500">Required: ${grandTotal.toFixed(2)}</span>
+                    <button
+                      onClick={() => setAmountPaid(grandTotal.toFixed(2))}
+                      className="text-sm text-blue-600 hover:text-blue-700"
+                    >
+                      Set exact amount
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Change */}
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Change:</span>
+                    <span className={`font-bold ${changeAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ${changeAmount >= 0 ? changeAmount.toFixed(2) : "0.00"}
+                    </span>
+                  </div>
+                  {changeAmount < 0 && (
+                    <p className="text-sm text-red-500 mt-1">Insufficient payment</p>
+                  )}
+                </div>
+                
+                {/* Complete Sale Button */}
+                <button
+                  onClick={handleCompleteSale}
+                  disabled={loading || selectedProducts.length === 0 || !amountPaid || parseFloat(amountPaid) < grandTotal}
+                  className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <FiShoppingCart className="mr-2 h-5 w-5" />
+                      BUY NOW
+                    </>
+                  )}
+                </button>
+                
+                {/* Customer Info */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Customer Information (Optional)</h3>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full mb-2 p-2 border border-gray-300 rounded-lg"
+                    placeholder="Customer Name"
+                  />
+                  <input
+                    type="text"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-lg"
+                    placeholder="Phone Number"
+                  />
+                </div>
+                
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-lg"
+                    placeholder="Additional notes..."
+                    rows="3"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Today's Sales Stats */}
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                {saleType === "today" ? "Today's Sales" : `Sales on ${saleDate}`}
+              </h2>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Sales:</span>
+                  <span className="font-medium">{salesByDate.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Revenue:</span>
+                  <span className="font-medium text-green-600">
+                    ${salesByDate.reduce((sum, sale) => sum + sale.grandTotal, 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Items:</span>
+                  <span className="font-medium">
+                    {salesByDate.reduce((sum, sale) => sum + sale.totalQuantity, 0)}
+                  </span>
+                </div>
+              </div>
+              
+              {salesByDate.length > 0 && (
+                <button
+                  onClick={() => {
+                    // You can add functionality to view sales details
+                    toast.success(`${salesByDate.length} sales recorded`);
+                  }}
+                  className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                >
+                  View Sales Details
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default CreateSale;
+export default CreateSaleNew;

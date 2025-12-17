@@ -1,41 +1,50 @@
 import express from "express";
 import {
-  createSale,
+  createSaleByDate,
+  createMultipleProductsSale,
+  searchProductsForSale,
   getSales,
   getSaleById,
+  getDailySalesSummary,
   updateSale,
   deleteSale,
+  getSalesByDateRange,
   getDailySales,
   getMyDailySales,
   getUsersDailySales,
   getSalesByDate,
-  getAllUsersSalesByDate,
-  createSalesByDate
-} from "../Controllers/salesController.js";
-import { protectedRoute } from "../middlewares/authMiddleware.js";
+  getAllUsersSalesByDate
+} from "../controllers/salesController.js";
+import { adminRoute, protectedRoute } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-// All routes are protected unless explicitly disabled in development
-if (!(process.env.NODE_ENV === "development" && process.env.DISABLE_AUTH_FOR_SALES === "true")) {
-  router.use(protectedRoute);
-}
+// ========== NEW SYSTEM ROUTES ==========
 
-router.route("/")
-  .get(getSales)
-  .post(createSale);
+// Product search for sales
+router.get("/products/search", protectedRoute, searchProductsForSale);
 
-router.route("/:id")
-  .get(getSaleById)
-  .put(updateSale)
-  .delete(deleteSale);
+// Create sales
+router.post("/", protectedRoute, createMultipleProductsSale);
+router.post("/by-date", protectedRoute, createSaleByDate);
+router.post("/multiple", protectedRoute, createMultipleProductsSale);
 
-// Daily sales routes (NO ObjectId parameters)
-router.get("/daily/today", getDailySales);
-router.get("/daily/my", getMyDailySales);
-router.get("/daily/users", getUsersDailySales);
-router.post("/byDate", createSalesByDate);
-router.get("/date/:date", getSalesByDate);
-router.get("/all/date/:date", getAllUsersSalesByDate);
+// Sales data
+router.get("/", protectedRoute, getSales);
+router.get("/:id", protectedRoute, getSaleById);
+router.get("/daily/summary", protectedRoute, getDailySalesSummary);
+router.get("/date-range/:startDate/:endDate", protectedRoute, getSalesByDateRange);
+
+// Update and delete
+router.put("/:id", protectedRoute, updateSale);
+router.delete("/:id", protectedRoute, deleteSale);
+
+// ========== DAILY SALES ROUTES (OLD SYSTEM COMPATIBILITY) ==========
+
+router.get("/daily/today", protectedRoute, getDailySales);
+router.get("/daily/my", protectedRoute, getMyDailySales);
+router.get("/daily/users", protectedRoute, adminRoute, getUsersDailySales);
+router.get("/date/:date", protectedRoute, getSalesByDate);
+router.get("/all/date/:date", protectedRoute, adminRoute, getAllUsersSalesByDate);
 
 export default router;

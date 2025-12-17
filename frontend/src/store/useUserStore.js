@@ -104,18 +104,33 @@ export const useUserStore = create((set, get) => ({
 
   checkAuth: async () => {
     try {
+      set({ isLoading: true });
       const { data } = await axios.get('/auth/getProfile');
       console.log("checkAuth response:", data);
+      
       if (data.user) {
-        set({ isAuthorized: true, user: data.user });
+        set({ 
+          isAuthorized: true, 
+          user: data.user,
+          authChecked: true,
+          isLoading: false 
+        });
       } else {
-        set({ isAuthorized: false, user: null });
+        set({ 
+          isAuthorized: false, 
+          user: null,
+          authChecked: true,
+          isLoading: false 
+        });
       }
     } catch (error) {
       console.error("checkAuth Error:", error?.response?.data?.message);
-      set({ isAuthorized: false, user: null });
-    } finally {
-      set({ authChecked: true });
+      set({ 
+        isAuthorized: false, 
+        user: null,
+        authChecked: true,
+        isLoading: false 
+      });
     }
   },
 }));

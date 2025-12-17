@@ -1,82 +1,290 @@
 import { create } from "zustand";
 import axios from "../lib/axios";
 
-const useSalesStore = create((set) => ({
+const useSalesStore = create((set, get) => ({
+  // State
   sales: [],
-  dailySales: [],
-  usersDailySales: [],
-  salesByDate: [],
-  allUsersSalesByDate: [],
+  selectedProducts: [],
+  searchResults: [],
   loading: false,
   error: null,
-  total: 0,
+  currentSale: null,
+  dailySummary: null,
+  salesByDate: [],
 
-  // -------------------- BASIC CRUD --------------------
-  fetchSales: async () => {
+  // -------------------- PRODUCT SEARCH --------------------
+  searchProducts: async (searchTerm) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.get("/sales");
-      set({ sales: res.data, loading: false });
+      const res = await axios.get(`/sales/products/search?search=${encodeURIComponent(searchTerm)}`);
+      set({ 
+        searchResults: res.data.products || [],
+        loading: false 
+      });
     } catch (err) {
       set({
-        error: err.response?.data?.message || "Failed to fetch sales",
+        error: err.response?.data?.error || "Failed to search products",
+        searchResults: [],
         loading: false,
       });
     }
   },
 
+  // -------------------- SELECTED PRODUCTS MANAGEMENT --------------------
+  addProductToSale: (product, quantity = 1, sellingPrice = null) => {
+    const existingProduct = get().selectedProducts.find(p => p._id === product._id);
+    
+    if (existingProduct) {
+      // Update existing product quantity
+      set(state => ({
+        selectedProducts: state.selectedProducts.map(p =>
+          p._id === product._id 
+            ? { 
+                ...p, 
+                quantity: p.quantity + quantity,
+                total: (p.quantity + quantity) * (sellingPrice || p.sellingPrice || p.price),
+                expected: (p.quantity + quantity) * (sellingPrice || p.sellingPrice || p.price)
+              }
+            : p
+        )
+      }));
+    } else {
+      // Add new product
+      const price = sellingPrice || product.price || product.cost;
+      const newProduct = {
+        ...product,
+        quantity,
+        sellingPrice: price,
+        discount: 0,
+        total: quantity * price,
+        expected: quantity * price
+      };
+      
+      set(state => ({
+        selectedProducts: [...state.selectedProducts, newProduct]
+      }));
+    }
+  },
+
+  updateProductQuantity: (productId, quantity) => {
+    set(state => ({
+      selectedProducts: state.selectedProducts.map(p => {
+        if (p._id === productId) {
+          const newQuantity = Math.max(1, quantity);
+          const total = newQuantity * p.sellingPrice;
+          const expected = total - (total * (p.discount / 100));
+          return { 
+            ...p, 
+            quantity: newQuantity,
+            total,
+            expected
+          };
+        }
+        return p;
+      })
+    }));
+  },
+
+  updateProductPrice: (productId, sellingPrice) => {
+    set(state => ({
+      selectedProducts: state.selectedProducts.map(p => {
+        if (p._id === productId) {
+          const total = p.quantity * sellingPrice;
+          const expected = total - (total * (p.discount / 100));
+          return { 
+            ...p, 
+            sellingPrice,
+            total,
+            expected
+          };
+        }
+        return p;
+      })
+    }));
+  },
+
+  updateProductDiscount: (productId, discount) => {
+    set(state => ({
+      selectedProducts: state.selectedProducts.map(p => {
+        if (p._id === productId) {
+          const validDiscount = Math.min(100, Math.max(0, discount));
+          const expected = p.total - (p.total * (validDiscount / 100));
+          return { 
+            ...p, 
+            discount: validDiscount,
+            expected
+          };
+        }
+        return p;
+      })
+    }));
+  },
+
+  removeProductFromSale: (productId) => {
+    set(state => ({
+      selectedProducts: state.selectedProducts.filter(p => p._id !== productId)
+    }));
+  },
+
+  clearSelectedProducts: () => {
+    set({ selectedProducts: [] });
+  },
+
+  // -------------------- SALE CALCULATIONS --------------------
+  getSaleCalculations: () => {
+    const selectedProducts = get().selectedProducts;
+    
+    const subtotal = selectedProducts.reduce((sum, p) => sum + p.total, 0);
+    const totalDiscount = selectedProducts.reduce((sum, p) => sum + (p.total * (p.discount / 100)), 0);
+    const totalExpected = selectedProducts.reduce((sum, p) => sum + p.expected, 0);
+    const totalQuantity = selectedProducts.reduce((sum, p) => sum + p.quantity, 0);
+
+    return {
+      subtotal: parseFloat(subtotal.toFixed(2)),
+      totalDiscount: parseFloat(totalDiscount.toFixed(2)),
+      totalExpected: parseFloat(totalExpected.toFixed(2)),
+      totalQuantity,
+      itemCount: selectedProducts.length
+    };
+  },
+
+  // -------------------- CREATE SALE --------------------
   createSale: async (saleData) => {
     set({ loading: true, error: null });
     try {
       const res = await axios.post("/sales", saleData);
-      set((state) => ({
-        sales: [res.data.data, ...state.sales],
-        loading: false,
-      }));
+      set({ 
+        currentSale: res.data.data,
+        selectedProducts: [],
+        loading: false 
+      });
       return res.data;
     } catch (err) {
       set({
-        error: err.response?.data?.message || "Failed to create sale",
+        error: err.response?.data?.error || "Failed to create sale",
         loading: false,
       });
       throw err;
     }
   },
 
-  // ✅ NEW: create sale with custom date
+  // -------------------- CREATE SALE BY DATE --------------------
   createSaleByDate: async (saleData) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.post("/sales/byDate", saleData);
-      set((state) => ({
-        sales: [res.data.data, ...state.sales],
-        salesByDate: [res.data.data, ...state.salesByDate], // push into date-based if matches
-        loading: false,
-      }));
+      const res = await axios.post("/sales/by-date", saleData);
+      set({ 
+        currentSale: res.data.data,
+        selectedProducts: [],
+        loading: false 
+      });
       return res.data;
     } catch (err) {
       set({
-        error: err.response?.data?.message || "Failed to create sale by date",
+        error: err.response?.data?.error || "Failed to create sale by date",
         loading: false,
       });
       throw err;
     }
   },
 
+  // -------------------- FETCH SALES --------------------
+  fetchSales: async (params = {}) => {
+    set({ loading: true, error: null });
+    try {
+      const queryParams = new URLSearchParams(params).toString();
+      const res = await axios.get(`/sales?${queryParams}`);
+      set({ 
+        sales: res.data.data || [],
+        loading: false 
+      });
+    } catch (err) {
+      set({
+        error: err.response?.data?.error || "Failed to fetch sales",
+        loading: false,
+      });
+    }
+  },
+
+  fetchDailySales: async () => {
+    set({ loading: true, error: null });
+    try {
+      const res = await axios.get("/sales/daily/today");
+      set({ 
+        salesByDate: res.data.sales || [],
+        loading: false 
+      });
+    } catch (err) {
+      set({
+        error: err.response?.data?.error || "Failed to fetch daily sales",
+        loading: false,
+      });
+    }
+  },
+
+  fetchSalesByDate: async (date) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await axios.get(`/sales/date/${date}`);
+      set({ 
+        salesByDate: res.data.sales || [],
+        loading: false 
+      });
+    } catch (err) {
+      set({
+        error: err.response?.data?.error || "Failed to fetch sales by date",
+        loading: false,
+      });
+    }
+  },
+
+  fetchDailySummary: async () => {
+    set({ loading: true, error: null });
+    try {
+      const res = await axios.get("/sales/daily/summary");
+      set({ 
+        dailySummary: res.data.data,
+        loading: false 
+      });
+    } catch (err) {
+      set({
+        error: err.response?.data?.error || "Failed to fetch daily summary",
+        loading: false,
+      });
+    }
+  },
+
+  fetchSaleById: async (saleId) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await axios.get(`/sales/${saleId}`);
+      set({ 
+        currentSale: res.data.data,
+        loading: false 
+      });
+    } catch (err) {
+      set({
+        error: err.response?.data?.error || "Failed to fetch sale",
+        loading: false,
+      });
+    }
+  },
+
+  // -------------------- UPDATE & DELETE --------------------
   updateSale: async (saleId, updatedData) => {
     set({ loading: true, error: null });
     try {
       const res = await axios.put(`/sales/${saleId}`, updatedData);
       set((state) => ({
         sales: state.sales.map((sale) =>
-          sale._id === saleId ? res.data.sale : sale
+          sale._id === saleId ? res.data.data : sale
         ),
         loading: false,
       }));
       return res.data;
     } catch (err) {
       set({
-        error: err.response?.data?.message || "Failed to update sale",
+        error: err.response?.data?.error || "Failed to update sale",
         loading: false,
       });
       throw err;
@@ -93,79 +301,17 @@ const useSalesStore = create((set) => ({
       }));
     } catch (err) {
       set({
-        error: err.response?.data?.message || "Failed to delete sale",
+        error: err.response?.data?.error || "Failed to delete sale",
         loading: false,
       });
       throw err;
     }
   },
 
-  // -------------------- DAILY & DATE-BASED --------------------
-  fetchDailySales: async () => {
-    set({ loading: true, error: null });
-    try {
-      const res = await axios.get("/sales/daily/today");
-      set({
-        dailySales: res.data,
-        loading: false,
-      });
-    } catch (err) {
-      set({
-        error: err.response?.data?.message || "Failed to fetch daily sales",
-        loading: false,
-      });
-    }
-  },
-
-  fetchUsersDailySales: async () => {
-    set({ loading: true, error: null });
-    try {
-      const res = await axios.get("/sales/daily/users");
-      set({
-        usersDailySales: res.data,
-        loading: false,
-      });
-    } catch (err) {
-      set({
-        error: err.response?.data?.message || "Failed to fetch users daily sales",
-        loading: false,
-      });
-    }
-  },
-
-  fetchSalesByDate: async (date) => {
-    set({ loading: true, error: null });
-    try {
-      const res = await axios.get(`/sales/date/${date}`);
-      set({
-        salesByDate: res.data,
-        loading: false,
-      });
-    } catch (err) {
-      set({
-        error: err.response?.data?.message || "Failed to fetch sales by date",
-        loading: false,
-      });
-    }
-  },
-
-  fetchAllUsersSalesByDate: async (date) => {
-    set({ loading: true, error: null });
-    try {
-      const res = await axios.get(`/sales/all/date/${date}`);
-      set({
-        allUsersSalesByDate: res.data,
-        loading: false,
-      });
-    } catch (err) {
-      set({
-        error:
-          err.response?.data?.message ||
-          "Failed to fetch all users sales by date",
-        loading: false,
-      });
-    }
-  },
+  // -------------------- CLEAR STATE --------------------
+  clearError: () => set({ error: null }),
+  clearCurrentSale: () => set({ currentSale: null }),
+  clearSearchResults: () => set({ searchResults: [] }),
 }));
 
 export default useSalesStore;
