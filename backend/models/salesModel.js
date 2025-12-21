@@ -1,4 +1,3 @@
-// models/salesModel.js
 import mongoose from "mongoose";
 
 const saleSchema = new mongoose.Schema({
@@ -69,7 +68,7 @@ const saleSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['cash', 'card', 'mobile', 'credit'],
+    enum: ['cash', 'zaad', 'edahab'], // ✅ CHANGED TO CORRECT VALUES
     default: 'cash'
   },
   amountPaid: {

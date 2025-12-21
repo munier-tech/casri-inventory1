@@ -25,6 +25,8 @@ import NotFound from './pages/NotFoundPage';
 import AccessDenied from './pages/AccessDeniedPage';
 import ProductsManager from './components/products/GetProducts';
 import CreateSaleNew from './pages/Homepage';
+import GetSales from './components/sales/getSales';
+import Vendor from './components/vendors/Vendor';
 
 const App = () => {
   const { checkAuth, user, isLoading, authChecked } = useUserStore();
@@ -79,11 +81,13 @@ const App = () => {
           <Route path="yearlyreports" element={<GetYearlyReport />} />
           <Route path="purchases" element={<PurchaseManager />} />
           <Route path="products" element={<ProductsManager />} />
-          <Route path="DailySales" element={<DailySales />} />
+          <Route path="CreateSales" element={<CreateSaleNew />} />
+          <Route path="GetSales" element={<GetSales />} />
           <Route path="HistorySalesDate" element={<SalesByDate />} />
           <Route path="UserDailySales" element={<GetAllUsersDailySales />} />
           <Route path="UserProductsByDate" element={<GetAllUsersSalesByDate />} />
           <Route path="stock" element={<Stock />} />
+          <Route path="vendor" element={<Vendor />} />
           <Route path="categories" element={<Categories />} />
           <Route path="loans" element={<LoanManagement />} />
           <Route path="FinancialLogDate" element={<FinancialLogDate />} />

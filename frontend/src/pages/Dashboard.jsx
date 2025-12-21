@@ -7,17 +7,12 @@ import {
   Boxes,
   PlusCircle,
   Calendar,
-  FileText,
-  Receipt,
-  FileScanIcon,
-  ChevronRight,
+  FileText, ChevronRight,
   BarChart3,
   Package,
   CreditCard,
   Users,
-  LogOut,
-  UserPlus,
-  LogIn,
+  LogOut, LogIn,
   Loader,
   DollarSign,
   User,
@@ -32,13 +27,14 @@ import {
   Zap,
   Briefcase,
   Layers,
-  FileBarChart,
-  Settings,
+  FileBarChart, House, BellDot,
+  Box
 } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import useProductsStore from "../store/useProductsStore";
 import useSalesStore from "../store/UseSalesStore";
 import { useUserStore } from "../store/useUserStore";
+import { BsCart } from "react-icons/bs";
 
 const Dashboard = ({ activeTab: initialActiveTab }) => {
   const [activeTab, setActiveTab] = useState(initialActiveTab || "dashboard");
@@ -78,9 +74,9 @@ const Dashboard = ({ activeTab: initialActiveTab }) => {
 
   const mainTabs = [
     {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: Home,
+      id: "Overview",
+      label: "Overview",
+      icon: Box,
       color: "from-blue-500 to-blue-600",
       gradient: "bg-gradient-to-r from-blue-500 to-blue-600",
       path: "/dashboard",
@@ -94,28 +90,28 @@ const Dashboard = ({ activeTab: initialActiveTab }) => {
       path: "/products",
     },
     {
-      id: "stock",
-      label: "Inventory",
-      icon: Boxes,
+      id: "alerts",
+      label: "alerts",
+      icon: BellDot,
       color: "from-amber-500 to-amber-600",
       gradient: "bg-gradient-to-r from-amber-500 to-amber-600",
       path: "/stock",
     },
     {
-      id: "sales",
-      label: "Sales",
+      id: "Checkout",
+      label: "Checkout",
       icon: ShoppingCart,
       color: "from-rose-500 to-rose-600",
       gradient: "bg-gradient-to-r from-rose-500 to-rose-600",
-      path: "/AddSale",
+      path: "/CreateSales",
     },
     {
-      id: "purchases",
-      label: "Purchases",
+      id: "Vendors",
+      label: "Vendors",
       icon: ShoppingBasket,
       color: "from-violet-500 to-violet-600",
       gradient: "bg-gradient-to-r from-violet-500 to-violet-600",
-      path: "/purchases",
+      path: "/vendor",
     },
     {
       id: "financial",
@@ -146,9 +142,17 @@ const Dashboard = ({ activeTab: initialActiveTab }) => {
       label: "Users",
       icon: Users,
       color: "from-pink-500 to-pink-600",
-      gradient: "bg-gradient-to-r from-pink-500 to-pink-600",
+      gradient: "bg-gradient-to-r from-purple-500 to-pink-600",
       path: "/UserDailySales",
     },
+     {
+      id: "Sales",
+      label: "Sales",
+      icon: BsCart,
+      color: "bg-gradient-to-r from-purple-500 to-purple-600",
+      path: "/GetSales",
+      desc: "View today's sales report",
+    }
   ];
 
   const quickAccessCards = [
@@ -161,24 +165,16 @@ const Dashboard = ({ activeTab: initialActiveTab }) => {
       desc: "Add new product to inventory",
     },
     {
-      id: "dailySales",
-      label: "Daily Sales",
+      id: "Sales",
+      label: "Sales",
       icon: Calendar,
-      color: "bg-gradient-to-r from-rose-500 to-rose-600",
-      path: "/DailySales",
+      color: "bg-gradient-to-r from-purple-500 to-purple-600",
+      path: "/GetSales",
       desc: "View today's sales report",
     },
     {
-      id: "newSale",
-      label: "New Sale",
-      icon: ShoppingCart,
-      color: "bg-gradient-to-r from-blue-500 to-blue-600",
-      path: "/AddSale",
-      desc: "Record a new sale transaction",
-    },
-    {
-      id: "inventory",
-      label: "Stock Report",
+      id: "alerts",
+      label: "alerts",
       icon: Boxes,
       color: "bg-gradient-to-r from-amber-500 to-amber-600",
       path: "/stock",
