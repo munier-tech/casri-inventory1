@@ -3,10 +3,8 @@ import Sale from "../models/salesModel.js";
 import dayjs from "dayjs";
 
 // ========== HELPER FUNCTIONS ==========
-
-// Validate payment method
 const validatePaymentMethod = (paymentMethod) => {
-  const validPaymentMethods = ['cash', 'zaad', 'edahab'];
+  const validPaymentMethods = ['cash', 'zaad', 'edahab', 'credit'];
   if (!validPaymentMethods.includes(paymentMethod)) {
     throw new Error(`Invalid payment method '${paymentMethod}'. Valid options: ${validPaymentMethods.join(', ')}`);
   }
@@ -31,7 +29,7 @@ const generateSaleNumber = () => {
 
 // ========== MAIN SALE FUNCTIONS ==========
 
-// ✅ Create Multiple Products Sale (New System)
+// ✅ Create Multiple Products Sale (New System with amountDue and amountPaid)
 export const createMultipleProductsSale = async (req, res) => {
   try {
     const { 
@@ -39,11 +37,13 @@ export const createMultipleProductsSale = async (req, res) => {
       discountPercentage = 0, 
       discountAmount = 0, 
       paymentMethod = 'cash', 
-      amountPaid, 
+      amountDue, // Total amount customer owes
+      amountPaid, // Amount customer actually paid
       saleDate,
       customerName,
       customerPhone,
-      notes
+      notes,
+      dueDate // Optional due date for credit sales
     } = req.body;
 
     // Validate input
@@ -61,6 +61,28 @@ export const createMultipleProductsSale = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: error.message
+      });
+    }
+
+    // Validate amounts
+    if (!amountDue || amountDue <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Amount due is required and must be greater than 0"
+      });
+    }
+
+    if (!amountPaid || amountPaid < 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Amount paid is required and cannot be negative"
+      });
+    }
+
+    if (amountPaid > amountDue) {
+      return res.status(400).json({
+        success: false,
+        error: "Amount paid cannot exceed amount due"
       });
     }
 
@@ -129,14 +151,24 @@ export const createMultipleProductsSale = async (req, res) => {
       discountAmount
     );
 
-    // Validate payment amount
-    const changeAmount = amountPaid - grandTotal;
-    
-    if (amountPaid < grandTotal) {
+    // Validate grand total matches amount due
+    if (Math.abs(grandTotal - amountDue) > 0.01) {
       return res.status(400).json({
         success: false,
-        error: `Insufficient payment. Required: $${grandTotal.toFixed(2)}, Paid: $${amountPaid?.toFixed(2) || '0.00'}`
+        error: `Amount due ($${amountDue}) does not match calculated grand total ($${grandTotal})`
       });
+    }
+
+    // Calculate change and remaining balance
+    const changeAmount = amountPaid > amountDue ? amountPaid - amountDue : 0;
+    const remainingBalance = Math.max(0, amountDue - amountPaid);
+
+    // Determine sale status
+    let status = 'pending';
+    if (amountPaid >= amountDue) {
+      status = 'completed';
+    } else if (amountPaid > 0) {
+      status = 'partially_paid';
     }
 
     // Update product stocks
@@ -164,24 +196,35 @@ export const createMultipleProductsSale = async (req, res) => {
       discountPercentage,
       discountAmount: discountTotal,
       grandTotal,
-      paymentMethod,
+      amountDue,
       amountPaid,
+      remainingBalance,
       changeAmount,
+      paymentMethod,
       totalQuantity,
       user: req.user?._id,
       customerName: customerName || null,
       customerPhone: customerPhone || null,
       notes: notes || null,
-      status: 'completed',
+      status,
       saleNumber: generateSaleNumber(),
-      ...(saleDate && { createdAt: dayjs(saleDate).toDate() })
+      dueDate: dueDate ? new Date(dueDate) : null,
+      ...(saleDate && { createdAt: dayjs(saleDate).toDate() }),
+      // Create initial payment history entry
+      paymentHistory: [{
+        date: new Date(),
+        amount: amountPaid,
+        paymentMethod: paymentMethod,
+        collectedBy: req.user?._id,
+        notes: amountPaid >= amountDue ? 'Full payment' : 'Partial payment'
+      }]
     };
 
     const sale = await Sale.create(saleData);
 
     res.status(201).json({
       success: true,
-      message: "Sale completed successfully",
+      message: amountPaid >= amountDue ? "Sale completed successfully" : "Sale recorded with partial payment",
       data: {
         sale,
         receipt: {
@@ -190,10 +233,12 @@ export const createMultipleProductsSale = async (req, res) => {
           items: sale.products.length,
           subtotal: sale.subtotal,
           discount: sale.discountAmount,
-          total: sale.grandTotal,
+          total: sale.amountDue,
+          paid: sale.amountPaid,
+          balance: sale.remainingBalance,
+          change: sale.changeAmount,
           payment: sale.paymentMethod,
-          amountPaid: sale.amountPaid,
-          change: sale.changeAmount
+          status: sale.status
         }
       }
     });
@@ -216,11 +261,13 @@ export const createSaleByDate = async (req, res) => {
       discountPercentage = 0, 
       discountAmount = 0, 
       paymentMethod = 'cash', 
-      amountPaid, 
+      amountDue,
+      amountPaid,
       saleDate,
       customerName,
       customerPhone,
-      notes
+      notes,
+      dueDate
     } = req.body;
 
     // Validate input
@@ -259,6 +306,28 @@ export const createSaleByDate = async (req, res) => {
       });
     }
 
+    // Validate amounts
+    if (!amountDue || amountDue <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Amount due is required and must be greater than 0"
+      });
+    }
+
+    if (!amountPaid || amountPaid < 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Amount paid is required and cannot be negative"
+      });
+    }
+
+    if (amountPaid > amountDue) {
+      return res.status(400).json({
+        success: false,
+        error: "Amount paid cannot exceed amount due"
+      });
+    }
+
     const validatedProducts = [];
     const stockUpdates = [];
     let totalQuantity = 0;
@@ -324,14 +393,24 @@ export const createSaleByDate = async (req, res) => {
       discountAmount
     );
 
-    // Validate payment amount
-    const changeAmount = amountPaid - grandTotal;
-    
-    if (amountPaid < grandTotal) {
+    // Validate grand total matches amount due
+    if (Math.abs(grandTotal - amountDue) > 0.01) {
       return res.status(400).json({
         success: false,
-        error: `Insufficient payment. Required: $${grandTotal.toFixed(2)}, Paid: $${amountPaid?.toFixed(2) || '0.00'}`
+        error: `Amount due ($${amountDue}) does not match calculated grand total ($${grandTotal})`
       });
+    }
+
+    // Calculate change and remaining balance
+    const changeAmount = amountPaid > amountDue ? amountPaid - amountDue : 0;
+    const remainingBalance = Math.max(0, amountDue - amountPaid);
+
+    // Determine sale status
+    let status = 'pending';
+    if (amountPaid >= amountDue) {
+      status = 'completed';
+    } else if (amountPaid > 0) {
+      status = 'partially_paid';
     }
 
     // Update product stocks
@@ -359,24 +438,35 @@ export const createSaleByDate = async (req, res) => {
       discountPercentage,
       discountAmount: discountTotal,
       grandTotal,
-      paymentMethod,
+      amountDue,
       amountPaid,
+      remainingBalance,
       changeAmount,
+      paymentMethod,
       totalQuantity,
       user: req.user?._id,
       customerName: customerName || null,
       customerPhone: customerPhone || null,
       notes: notes || null,
-      status: 'completed',
+      status,
       saleNumber: generateSaleNumber(),
-      createdAt: saleDateTime.toDate()
+      dueDate: dueDate ? new Date(dueDate) : null,
+      createdAt: saleDateTime.toDate(),
+      // Create initial payment history entry
+      paymentHistory: [{
+        date: new Date(),
+        amount: amountPaid,
+        paymentMethod: paymentMethod,
+        collectedBy: req.user?._id,
+        notes: amountPaid >= amountDue ? 'Full payment' : 'Partial payment'
+      }]
     };
 
     const sale = await Sale.create(saleData);
 
     res.status(201).json({
       success: true,
-      message: `Sale for ${saleDateTime.format('MMM D, YYYY')} completed successfully`,
+      message: `Sale for ${saleDateTime.format('MMM D, YYYY')} ${amountPaid >= amountDue ? 'completed' : 'recorded with partial payment'}`,
       data: {
         sale,
         receipt: {
@@ -385,10 +475,12 @@ export const createSaleByDate = async (req, res) => {
           items: sale.products.length,
           subtotal: sale.subtotal,
           discount: sale.discountAmount,
-          total: sale.grandTotal,
+          total: sale.amountDue,
+          paid: sale.amountPaid,
+          balance: sale.remainingBalance,
+          change: sale.changeAmount,
           payment: sale.paymentMethod,
-          amountPaid: sale.amountPaid,
-          change: sale.changeAmount
+          status: sale.status
         }
       }
     });
@@ -403,7 +495,8 @@ export const createSaleByDate = async (req, res) => {
   }
 };
 
-// ✅ Quick Product Search for Sales
+
+// ✅ Quick Product Search for Sales (unchanged)
 export const searchProductsForSale = async (req, res) => {
   try {
     const { search } = req.query;
@@ -453,13 +546,13 @@ export const searchProductsForSale = async (req, res) => {
   }
 };
 
-// ✅ Get All Sales (for new system)
+// ✅ Get All Sales (updated to include amountDue and amountPaid)
 export const getSales = async (req, res) => {
   try {
-    const { page = 1, limit = 50, startDate, endDate, paymentMethod } = req.query;
+    const { page = 1, limit = 50, startDate, endDate, paymentMethod, status } = req.query;
     const skip = (page - 1) * limit;
 
-    let query = {};
+    let query = { user: req.user._id };
 
     if (startDate && endDate) {
       query.createdAt = {
@@ -473,6 +566,11 @@ export const getSales = async (req, res) => {
       query.paymentMethod = paymentMethod;
     }
 
+    // Filter by status if provided
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
     const sales = await Sale.find(query)
       .populate("user", "username role")
       .populate("products.product", "name cost")
@@ -481,9 +579,19 @@ export const getSales = async (req, res) => {
       .limit(parseInt(limit));
 
     const totalSales = await Sale.countDocuments(query);
-    const totalRevenue = await Sale.aggregate([
+    
+    // Calculate totals
+    const totals = await Sale.aggregate([
       { $match: query },
-      { $group: { _id: null, total: { $sum: "$grandTotal" } } }
+      { 
+        $group: { 
+          _id: null, 
+          totalAmountDue: { $sum: "$amountDue" },
+          totalAmountPaid: { $sum: "$amountPaid" },
+          totalRemainingBalance: { $sum: "$remainingBalance" },
+          totalSalesValue: { $sum: "$grandTotal" }
+        } 
+      }
     ]);
 
     // Get payment method statistics
@@ -492,10 +600,24 @@ export const getSales = async (req, res) => {
       { $group: { 
         _id: "$paymentMethod", 
         count: { $sum: 1 },
-        totalRevenue: { $sum: "$grandTotal" },
-        avgSale: { $avg: "$grandTotal" }
+        totalAmountDue: { $sum: "$amountDue" },
+        totalAmountPaid: { $sum: "$amountPaid" },
+        avgSale: { $avg: "$amountDue" }
       }},
-      { $sort: { totalRevenue: -1 } }
+      { $sort: { totalAmountDue: -1 } }
+    ]);
+
+    // Get status statistics
+    const statusStats = await Sale.aggregate([
+      { $match: query },
+      { $group: { 
+        _id: "$status", 
+        count: { $sum: 1 },
+        totalAmountDue: { $sum: "$amountDue" },
+        totalAmountPaid: { $sum: "$amountPaid" },
+        totalRemainingBalance: { $sum: "$remainingBalance" }
+      }},
+      { $sort: { totalRemainingBalance: -1 } }
     ]);
 
     res.status(200).json({
@@ -505,10 +627,16 @@ export const getSales = async (req, res) => {
         currentPage: parseInt(page),
         totalPages: Math.ceil(totalSales / limit),
         totalSales,
-        totalRevenue: totalRevenue[0]?.total || 0
+        totals: totals[0] || {
+          totalAmountDue: 0,
+          totalAmountPaid: 0,
+          totalRemainingBalance: 0,
+          totalSalesValue: 0
+        }
       },
       stats: {
-        paymentMethods: paymentStats
+        paymentMethods: paymentStats,
+        statuses: statusStats
       }
     });
   } catch (error) {
@@ -545,52 +673,19 @@ export const getSaleById = async (req, res) => {
   }
 };
 
-// ✅ Get Today's Sales Summary
-export const getDailySalesSummary = async (req, res) => {
-  try {
-    const start = dayjs().startOf("day").toDate();
-    const end = dayjs().endOf("day").toDate();
-
-    const sales = await Sale.find({
-      createdAt: { $gte: start, $lte: end },
-      status: 'completed'
-    }).populate("user", "username");
-
-    const summary = {
-      totalSales: sales.length,
-      totalRevenue: sales.reduce((sum, sale) => sum + sale.grandTotal, 0),
-      totalItems: sales.reduce((sum, sale) => sum + sale.totalQuantity, 0),
-      totalDiscount: sales.reduce((sum, sale) => sum + sale.discountAmount, 0),
-      averageSale: sales.length > 0 ? 
-        sales.reduce((sum, sale) => sum + sale.grandTotal, 0) / sales.length : 0,
-      salesByPaymentMethod: sales.reduce((acc, sale) => {
-        const method = sale.paymentMethod || 'cash';
-        if (!acc[method]) {
-          acc[method] = { count: 0, revenue: 0 };
-        }
-        acc[method].count += 1;
-        acc[method].revenue += sale.grandTotal;
-        return acc;
-      }, {}),
-      recentSales: sales.slice(0, 10)
-    };
-
-    res.status(200).json({
-      success: true,
-      data: summary
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-};
-
 // ✅ Update Sale
 export const updateSale = async (req, res) => {
   try {
-    const { discountPercentage, discountAmount, paymentMethod, amountPaid, notes, status } = req.body;
+    const { 
+      discountPercentage, 
+      discountAmount, 
+      paymentMethod, 
+      amountDue, 
+      amountPaid, 
+      notes, 
+      status,
+      dueDate 
+    } = req.body;
     
     const sale = await Sale.findById(req.params.id);
     if (!sale) {
@@ -612,7 +707,7 @@ export const updateSale = async (req, res) => {
       }
     }
 
-    // If sale is completed, don't allow updates to certain fields
+    // If sale is completed, be careful about updates
     if (sale.status === 'completed') {
       return res.status(400).json({
         success: false,
@@ -624,12 +719,17 @@ export const updateSale = async (req, res) => {
     if (discountPercentage !== undefined) sale.discountPercentage = discountPercentage;
     if (discountAmount !== undefined) sale.discountAmount = discountAmount;
     if (paymentMethod) sale.paymentMethod = paymentMethod;
-    if (amountPaid !== undefined) {
-      sale.amountPaid = amountPaid;
-      sale.changeAmount = amountPaid - sale.grandTotal;
-    }
+    if (amountDue !== undefined) sale.amountDue = amountDue;
+    if (amountPaid !== undefined) sale.amountPaid = amountPaid;
     if (notes !== undefined) sale.notes = notes;
     if (status) sale.status = status;
+    if (dueDate !== undefined) sale.dueDate = dueDate ? new Date(dueDate) : null;
+
+    // Recalculate if amounts changed
+    if (amountDue !== undefined || amountPaid !== undefined) {
+      sale.remainingBalance = Math.max(0, sale.amountDue - sale.amountPaid);
+      sale.changeAmount = sale.amountPaid > sale.amountDue ? sale.amountPaid - sale.amountDue : 0;
+    }
 
     // Recalculate totals if discount changed
     if (discountPercentage !== undefined || discountAmount !== undefined) {
@@ -641,8 +741,11 @@ export const updateSale = async (req, res) => {
       sale.subtotal = subtotal;
       sale.discountAmount = discountTotal;
       sale.grandTotal = grandTotal;
-      if (sale.amountPaid) {
-        sale.changeAmount = sale.amountPaid - sale.grandTotal;
+      
+      // Adjust amount due to match grand total
+      if (sale.amountDue !== grandTotal) {
+        sale.amountDue = grandTotal;
+        sale.remainingBalance = Math.max(0, sale.amountDue - sale.amountPaid);
       }
     }
 
@@ -688,6 +791,71 @@ export const deleteSale = async (req, res) => {
       success: true,
       message: "Sale deleted and stock restored successfully",
       deletedSaleId: req.params.id
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+// ✅ Get Daily Sales Summary
+export const getDailySalesSummary = async (req, res) => {
+  try {
+    const start = dayjs().startOf("day").toDate();
+    const end = dayjs().endOf("day").toDate();
+
+    const sales = await Sale.find({
+      createdAt: { $gte: start, $lte: end },
+      user: req.user._id
+    }).populate("user", "username");
+
+    const summary = {
+      totalSales: sales.length,
+      totalAmountDue: sales.reduce((sum, sale) => sum + sale.amountDue, 0),
+      totalAmountPaid: sales.reduce((sum, sale) => sum + sale.amountPaid, 0),
+      totalRemainingBalance: sales.reduce((sum, sale) => sum + sale.remainingBalance, 0),
+      totalItems: sales.reduce((sum, sale) => sum + sale.totalQuantity, 0),
+      totalDiscount: sales.reduce((sum, sale) => sum + sale.discountAmount, 0),
+      salesByPaymentMethod: sales.reduce((acc, sale) => {
+        const method = sale.paymentMethod || 'cash';
+        if (!acc[method]) {
+          acc[method] = { 
+            count: 0, 
+            amountDue: 0, 
+            amountPaid: 0,
+            remainingBalance: 0 
+          };
+        }
+        acc[method].count += 1;
+        acc[method].amountDue += sale.amountDue;
+        acc[method].amountPaid += sale.amountPaid;
+        acc[method].remainingBalance += sale.remainingBalance;
+        return acc;
+      }, {}),
+      salesByStatus: sales.reduce((acc, sale) => {
+        const status = sale.status || 'pending';
+        if (!acc[status]) {
+          acc[status] = { 
+            count: 0, 
+            amountDue: 0, 
+            amountPaid: 0,
+            remainingBalance: 0 
+          };
+        }
+        acc[status].count += 1;
+        acc[status].amountDue += sale.amountDue;
+        acc[status].amountPaid += sale.amountPaid;
+        acc[status].remainingBalance += sale.remainingBalance;
+        return acc;
+      }, {}),
+      recentSales: sales.slice(0, 10)
+    };
+
+    res.status(200).json({
+      success: true,
+      data: summary
     });
   } catch (error) {
     res.status(500).json({ 
@@ -980,6 +1148,181 @@ export const getAllUsersSalesByDate = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: error.message 
+    });
+  }
+};
+// ✅ SIMPLE VERSION - Get all accounts receivable
+export const getAccountsReceivable = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // ALTERNATIVE QUERY: Try this if above doesn't work
+    const query = { 
+      user: userId,
+      $or: [
+        { remainingBalance: { $gt: 0 } },
+        { amountPaid: { $lt: "$amountDue" } }
+      ]
+    };
+
+    // Or even simpler:
+    // const query = { user: userId };
+    // Then filter in JavaScript
+    
+    const sales = await Sale.find({ user: userId })
+      .populate('user', 'username')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Filter in JavaScript
+    const receivables = sales.filter(sale => 
+      sale.remainingBalance > 0 || 
+      sale.amountPaid < sale.amountDue
+    );
+
+    // Format
+    const formattedData = receivables.map(sale => ({
+      saleId: sale._id,
+      saleNumber: sale.saleNumber,
+      customer: sale.customerName || 'Walk-in Customer',
+      total: sale.amountDue,
+      paid: sale.amountPaid,
+      balance: sale.remainingBalance || Math.max(0, sale.amountDue - sale.amountPaid),
+      status: sale.status,
+      paymentMethod: sale.paymentMethod
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: formattedData,
+      summary: {
+        totalReceivables: formattedData.length,
+        totalBalance: formattedData.reduce((sum, item) => sum + item.balance, 0)
+      }
+    });
+
+  } catch (error) {
+    console.error("Accounts receivable error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error",
+      message: error.message
+    });
+  }
+};
+
+// ✅ Add Payment to Sale (Collect Payment)
+export const addPaymentToSale = async (req, res) => {
+  try {
+    const { amount, paymentMethod = 'cash', notes, currency = 'USD' } = req.body;
+    const saleId = req.params.id;
+
+    // Validate input
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid payment amount is required"
+      });
+    }
+
+    // Find sale
+    const sale = await Sale.findById(saleId);
+    if (!sale) {
+      return res.status(404).json({
+        success: false,
+        error: "Sale not found"
+      });
+    }
+
+    // Check if sale is already paid in full
+    if (sale.status === 'completed' || sale.remainingBalance <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Sale is already paid in full"
+      });
+    }
+
+    // Validate payment method
+    try {
+      validatePaymentMethod(paymentMethod);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+
+    // Calculate new amounts
+    const newAmountPaid = sale.amountPaid + amount;
+    const newRemainingBalance = Math.max(0, sale.amountDue - newAmountPaid);
+    
+    // Prevent overpayment
+    if (amount > sale.remainingBalance) {
+      return res.status(400).json({
+        success: false,
+        error: `Payment amount ($${amount}) exceeds remaining balance ($${sale.remainingBalance})`
+      });
+    }
+
+    // Update sale
+    sale.amountPaid = newAmountPaid;
+    sale.remainingBalance = newRemainingBalance;
+    
+    // Update status
+    if (newAmountPaid >= sale.amountDue) {
+      sale.status = 'completed';
+      sale.hasDebt = false;
+    } else {
+      sale.status = 'partially_paid';
+      sale.hasDebt = true;
+    }
+
+    // Check if overdue status should be updated
+    if (sale.dueDate && new Date() > sale.dueDate && sale.remainingBalance > 0) {
+      sale.status = 'overdue';
+    }
+
+    // Add to payment history
+    sale.paymentHistory.push({
+      date: new Date(),
+      amount: amount,
+      paymentMethod: paymentMethod,
+      currency: currency,
+      collectedBy: req.user?._id,
+      notes: notes || `Payment of ${currency} ${amount} via ${paymentMethod}`
+    });
+
+    await sale.save();
+
+    // Get updated sale with populated data
+    const updatedSale = await Sale.findById(saleId)
+      .populate('user', 'username')
+      .populate({
+        path: 'paymentHistory.collectedBy',
+        select: 'username',
+        model: 'User'
+      });
+
+    res.status(200).json({
+      success: true,
+      message: `Payment of ${currency} ${amount} added successfully`,
+      data: {
+        sale: updatedSale,
+        paymentSummary: {
+          totalDue: updatedSale.amountDue,
+          totalPaid: updatedSale.amountPaid,
+          remainingBalance: updatedSale.remainingBalance,
+          status: updatedSale.status
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Error adding payment to sale:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error while processing payment",
+      details: error.message
     });
   }
 };

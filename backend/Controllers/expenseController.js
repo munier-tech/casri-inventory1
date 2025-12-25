@@ -1,5 +1,5 @@
-import Expense from '../models/Expense.js';
 import mongoose from 'mongoose';
+import Expense from '../models/ExpensesModel.js';
 
 // @desc    Create new expense
 // @route   POST /api/expenses

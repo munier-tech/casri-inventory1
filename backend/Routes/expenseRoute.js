@@ -7,23 +7,21 @@ import {
   deleteExpense,
   getExpenseStats
 } from '../Controllers/expenseController.js';
-import protectedRoute from '../middlewares/authMiddleware.js';
+import { protectedRoute } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// All routes are protected
-router.use(protectedRoute)
+// Apply auth middleware to all routes, except in development when explicitly disabled
+if (!(process.env.NODE_ENV === "development" && process.env.DISABLE_AUTH_FOR_EXPENSES === "true")) {
+  router.use(protectedRoute);
+}
 
-router.route('/')
-  .post(createExpense)
-  .get(getExpenses);
-
-router.route('/stats/summary')
-  .get(getExpenseStats);
-
-router.route('/:id')
-  .get(getExpenseById)
-  .put(updateExpense)
-  .delete(deleteExpense);
+// Expense CRUD routes
+router.post("/", protectedRoute , createExpense);
+router.get("/", protectedRoute , getExpenses);
+router.get("/stats/summary", protectedRoute , getExpenseStats);
+router.get("/:id", protectedRoute , getExpenseById);
+router.put("/:id", protectedRoute , updateExpense);
+router.delete("/:id",  protectedRoute , deleteExpense);
 
 export default router;

@@ -114,12 +114,20 @@ const Dashboard = ({ activeTab: initialActiveTab }) => {
       path: "/vendor",
     },
     {
-      id: "financial",
-      label: "Financial",
+      id: "expense",
+      label: "Expenses",
       icon: CreditCard,
       color: "from-indigo-500 to-indigo-600",
       gradient: "bg-gradient-to-r from-indigo-500 to-indigo-600",
-      path: "/FinancialLogForm",
+      path: "/expense",
+    },
+    {
+      id: "Account",
+      label: "Account Receivables",
+      icon: CreditCard,
+      color: "from-indigo-500 to-indigo-600",
+      gradient: "bg-gradient-to-r from-indigo-500 to-indigo-600",
+      path: "/Account",
     },
     {
       id: "loans",

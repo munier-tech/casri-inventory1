@@ -122,4 +122,6 @@ expenseSchema.index({ user: 1, clientName: 1 });
 expenseSchema.index({ user: 1, status: 1 });
 expenseSchema.index({ dueDate: 1 });
 
-export default mongoose.model('Expense', expenseSchema);
+const Expense = mongoose.model('Expense', expenseSchema);
+
+export default Expense;

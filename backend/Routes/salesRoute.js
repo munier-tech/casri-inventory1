@@ -13,8 +13,11 @@ import {
   getMyDailySales,
   getUsersDailySales,
   getSalesByDate,
-  getAllUsersSalesByDate
-} from "../controllers/salesController.js";
+  getAllUsersSalesByDate,
+  // Add these new imports
+  getAccountsReceivable,
+  addPaymentToSale  // ADD THIS IMPORT!
+} from "../Controllers/salesController.js";
 import { adminRoute, protectedRoute } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -31,7 +34,16 @@ router.post("/multiple", protectedRoute, createMultipleProductsSale);
 
 // Sales data
 router.get("/", protectedRoute, getSales);
+
+// ⚠️⚠️⚠️ CRITICAL: This MUST come BEFORE /:id ⚠️⚠️⚠️
+router.get("/receivables", protectedRoute, getAccountsReceivable);
+
+// ⚠️⚠️⚠️ This comes AFTER /receivables ⚠️⚠️⚠️
 router.get("/:id", protectedRoute, getSaleById);
+
+// ⚠️⚠️⚠️ ADD THIS NEW ROUTE FOR PAYMENTS ⚠️⚠️⚠️
+router.post("/:id/payment", protectedRoute, addPaymentToSale);
+
 router.get("/daily/summary", protectedRoute, getDailySalesSummary);
 router.get("/date-range/:startDate/:endDate", protectedRoute, getSalesByDateRange);
 

@@ -16,6 +16,7 @@ import categoryRouter from "./Routes/categoryRoute.js";
 import SalesRouter from "./Routes/salesRoute.js";
 import uploadRouter from "./Routes/uploadRoute.js";
 import loanRouter from "./Routes/loanRoute.js";
+import accountsReceivableRoutes from "./Routes/accountReceivableRouter.js";
 import purchaseRouter from "./Routes/purchaseRoute.js";
 import VendorRouter from "./Routes/vendorRoute.js";
 import reportRouter from "./Routes/ReportsRoute.js";
@@ -99,6 +100,8 @@ app.use("/api/purchases", purchaseRouter);
 app.use("/api/reports", reportRouter);
 app.use("/api/vendors", VendorRouter);
 app.use('/api/expenses', expenseRoutes);
+app.use("/api/receivables", accountsReceivableRoutes);
+
 // Only start HTTP server locally (Vercel sets VERCEL=1)
 if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
   app.listen(PORT, () => {

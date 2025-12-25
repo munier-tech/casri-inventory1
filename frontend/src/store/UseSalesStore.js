@@ -144,7 +144,8 @@ const useSalesStore = create((set, get) => ({
       totalDiscount: parseFloat(totalDiscount.toFixed(2)),
       totalExpected: parseFloat(totalExpected.toFixed(2)),
       totalQuantity,
-      itemCount: selectedProducts.length
+      itemCount: selectedProducts.length,
+      grandTotal: parseFloat((subtotal - totalDiscount).toFixed(2))
     };
   },
 
@@ -152,7 +153,13 @@ const useSalesStore = create((set, get) => ({
   createSale: async (saleData) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.post("/sales", saleData);
+      // Include amountDue (grand total) in the sale data
+      const dataToSend = {
+        ...saleData,
+        amountDue: saleData.grandTotal || saleData.amountDue
+      };
+      
+      const res = await axios.post("/sales", dataToSend);
       set({ 
         currentSale: res.data.data,
         selectedProducts: [],
@@ -172,7 +179,13 @@ const useSalesStore = create((set, get) => ({
   createSaleByDate: async (saleData) => {
     set({ loading: true, error: null });
     try {
-      const res = await axios.post("/sales/by-date", saleData);
+      // Include amountDue (grand total) in the sale data
+      const dataToSend = {
+        ...saleData,
+        amountDue: saleData.grandTotal || saleData.amountDue
+      };
+      
+      const res = await axios.post("/sales/by-date", dataToSend);
       set({ 
         currentSale: res.data.data,
         selectedProducts: [],
@@ -182,6 +195,30 @@ const useSalesStore = create((set, get) => ({
     } catch (err) {
       set({
         error: err.response?.data?.error || "Failed to create sale by date",
+        loading: false,
+      });
+      throw err;
+    }
+  },
+
+  // -------------------- ADD PAYMENT TO SALE --------------------
+  addPaymentToSale: async (saleId, paymentData) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await axios.post(`/sales/${saleId}/payment`, paymentData);
+      
+      // Update the sale in the sales list
+      set(state => ({
+        sales: state.sales.map(sale =>
+          sale._id === saleId ? res.data.data : sale
+        ),
+        loading: false
+      }));
+      
+      return res.data;
+    } catch (err) {
+      set({
+        error: err.response?.data?.error || "Failed to add payment",
         loading: false,
       });
       throw err;
@@ -198,6 +235,7 @@ const useSalesStore = create((set, get) => ({
         sales: res.data.data || [],
         loading: false 
       });
+      return res.data;
     } catch (err) {
       set({
         error: err.response?.data?.error || "Failed to fetch sales",

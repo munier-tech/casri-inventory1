@@ -8,15 +8,21 @@ import {
   FiX,
   FiTrash2,
   FiShoppingCart,
-  FiDollarSign, FiCalendar,
-  FiPackage, FiPrinter, FiPercent, FiSmartphone
+  FiDollarSign,
+  FiCalendar,
+  FiPackage,
+  FiPrinter,
+  FiPercent,
+  FiSmartphone,
+  FiUser,
+  FiPhone
 } from "react-icons/fi";
 import {
   BsCashCoin
 } from "react-icons/bs";
 import useProductsStore from "../store/useProductsStore";
 import useSalesStore from "../store/UseSalesStore";
-import { DollarSign } from "lucide-react";
+import { DollarSign, CreditCard } from "lucide-react";
 
 const CreateSaleNew = () => {
   const { fetchProducts } = useProductsStore();
@@ -42,10 +48,17 @@ const CreateSaleNew = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [saleType, setSaleType] = useState("today"); // "today" or "date"
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
-  const [paymentMethod, setPaymentMethod] = useState("cash");
+  
+  // Payment fields - reorganized as requested
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [amountDue, setAmountDue] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
+  
+  // Customer information
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  
+  // Other fields
   const [notes, setNotes] = useState("");
   const [discountType, setDiscountType] = useState("percentage"); // "percentage" or "amount"
   const [discountValue, setDiscountValue] = useState("");
@@ -59,19 +72,17 @@ const CreateSaleNew = () => {
   // Calculations
   const calculations = getSaleCalculations();
   
-  // Calculate expected money for each product
-  const calculateExpected = (product) => {
-    const discountAmount = (product.sellingPrice * product.discount) / 100;
-    const priceAfterDiscount = product.sellingPrice - discountAmount;
-    return priceAfterDiscount * product.quantity;
-  };
-
   // Calculate grand total with discount
   const discountAmount = discountType === "percentage" 
     ? (parseFloat(discountValue) || 0) / 100 * calculations.subtotal
     : parseFloat(discountValue) || 0;
   const grandTotal = calculations.subtotal - discountAmount;
-  const changeAmount = parseFloat(amountPaid || 0) - grandTotal;
+  
+  // Calculate remaining balance and change
+  const paidAmount = parseFloat(amountPaid) || 0;
+  const dueAmount = parseFloat(amountDue) || grandTotal;
+  const remainingBalance = Math.max(0, dueAmount - paidAmount);
+  const changeAmount = paidAmount > dueAmount ? paidAmount - dueAmount : 0;
 
   // Fetch initial data
   useEffect(() => {
@@ -82,6 +93,13 @@ const CreateSaleNew = () => {
       searchInputRef.current.focus();
     }
   }, [fetchProducts, fetchDailySales]);
+
+  // Set amount due automatically when grand total changes
+  useEffect(() => {
+    if (grandTotal > 0 && !amountDue) {
+      setAmountDue(grandTotal.toFixed(2));
+    }
+  }, [grandTotal, amountDue]);
 
   // Search products
   useEffect(() => {
@@ -145,6 +163,12 @@ const CreateSaleNew = () => {
   };
 
   // Calculate expected money for all products
+  const calculateExpected = (product) => {
+    const discountAmount = (product.sellingPrice * product.discount) / 100;
+    const priceAfterDiscount = product.sellingPrice - discountAmount;
+    return priceAfterDiscount * product.quantity;
+  };
+
   const totalExpected = selectedProducts.reduce((sum, product) => {
     return sum + calculateExpected(product);
   }, 0);
@@ -156,9 +180,23 @@ const CreateSaleNew = () => {
       return;
     }
 
-    if (!amountPaid || parseFloat(amountPaid) < grandTotal) {
-      toast.error(`Amount paid must be at least $${grandTotal.toFixed(2)}`);
-      amountPaidInputRef.current?.focus();
+    if (!paymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
+
+    if (!amountDue || parseFloat(amountDue) <= 0) {
+      toast.error("Amount due is required");
+      return;
+    }
+
+    if (!amountPaid || parseFloat(amountPaid) < 0) {
+      toast.error("Amount paid is required");
+      return;
+    }
+
+    if (parseFloat(amountPaid) > parseFloat(amountDue)) {
+      toast.error("Amount paid cannot exceed amount due");
       return;
     }
 
@@ -172,7 +210,9 @@ const CreateSaleNew = () => {
       discountPercentage: discountType === "percentage" ? parseFloat(discountValue) || 0 : 0,
       discountAmount: discountType === "amount" ? parseFloat(discountValue) || 0 : 0,
       paymentMethod,
+      amountDue: parseFloat(amountDue),
       amountPaid: parseFloat(amountPaid),
+      grandTotal: grandTotal,
       ...(saleType === "date" && { saleDate }),
       ...(customerName && { customerName }),
       ...(customerPhone && { customerPhone }),
@@ -185,12 +225,19 @@ const CreateSaleNew = () => {
         toast.success(`Sale recorded for ${new Date(saleDate).toLocaleDateString()}`);
       } else {
         await createSale(saleData);
-        toast.success("Sale completed successfully!");
+        
+        if (parseFloat(amountPaid) >= parseFloat(amountDue)) {
+          toast.success("Sale completed successfully!");
+        } else {
+          toast.success("Sale recorded with partial payment!");
+        }
       }
 
       // Clear form
       clearSelectedProducts();
+      setAmountDue("");
       setAmountPaid("");
+      setPaymentMethod("");
       setCustomerName("");
       setCustomerPhone("");
       setNotes("");
@@ -205,7 +252,7 @@ const CreateSaleNew = () => {
         searchInputRef.current.focus();
       }
     } catch (error) {
-      toast.error(error.message || "Failed to complete sale");
+      toast.error(error.response?.data?.error || error.message || "Failed to complete sale");
     }
   };
 
@@ -235,6 +282,9 @@ const CreateSaleNew = () => {
           .total-row { font-weight: bold; font-size: 14px; margin-top: 5px; }
           .footer { text-align: center; margin-top: 20px; font-size: 10px; }
           .bold { font-weight: bold; }
+          .status { padding: 2px 8px; border-radius: 4px; font-size: 10px; }
+          .paid { background: #d1fae5; color: #065f46; }
+          .partial { background: #fef3c7; color: #92400e; }
         </style>
       </head>
       <body>
@@ -267,22 +317,32 @@ const CreateSaleNew = () => {
             <div>-$${discountAmount.toFixed(2)}</div>
           </div>
           <div class="item-row total-row">
-            <div>TOTAL:</div>
-            <div>$${grandTotal.toFixed(2)}</div>
+            <div>AMOUNT DUE:</div>
+            <div>$${parseFloat(amountDue || grandTotal).toFixed(2)}</div>
           </div>
           <div class="item-row">
-            <div>Paid:</div>
+            <div>Amount Paid:</div>
             <div>$${parseFloat(amountPaid || 0).toFixed(2)}</div>
           </div>
           <div class="item-row">
-            <div>Change:</div>
-            <div>$${changeAmount >= 0 ? changeAmount.toFixed(2) : "0.00"}</div>
+            <div>Remaining Balance:</div>
+            <div>$${remainingBalance.toFixed(2)}</div>
           </div>
           <div class="item-row">
-            <div>Payment:</div>
-            <div>${paymentMethod.toUpperCase()}</div>
+            <div>Change:</div>
+            <div>$${changeAmount.toFixed(2)}</div>
+          </div>
+          <div class="item-row">
+            <div>Payment Method:</div>
+            <div>${paymentMethod ? paymentMethod.toUpperCase() : 'CASH'}</div>
           </div>
           ${customerName ? `<div class="item-row"><div>Customer:</div><div>${customerName}</div></div>` : ''}
+          <div class="item-row">
+            <div>Status:</div>
+            <div class="status ${paidAmount >= dueAmount ? 'paid' : 'partial'}">
+              ${paidAmount >= dueAmount ? 'FULLY PAID' : 'PARTIALLY PAID'}
+            </div>
+          </div>
           <div class="footer">
             <p>Thank you for your business!</p>
             <p>Receipt #: ${Date.now().toString().slice(-6)}</p>
@@ -302,11 +362,11 @@ const CreateSaleNew = () => {
     }, 250);
   };
 
-  // Payment methods - updated with Zaad, Edahab, Cash
+  // Payment methods - reordered as requested
   const paymentMethods = [
-    { value: "cash", label: "Cash", icon: <BsCashCoin className="inline mr-2" />, color: "bg-green-50 border-green-200 text-green-600" },
-    { value: "zaad", label: "Zaad", icon: <FiSmartphone className="inline mr-2" />, color: "bg-blue-50 border-blue-200 text-blue-600" },
-    { value: "edahab", label: "Edahab", icon: <DollarSign className="inline mr-2" />, color: "bg-purple-50 border-purple-200 text-purple-600" }
+    { value: "zaad", label: "Zaad", icon: <FiSmartphone className="h-5 w-5" />, color: "bg-blue-50 border-blue-200 text-blue-600" },
+    { value: "edahab", label: "Edahab", icon: <DollarSign className="h-5 w-5" />, color: "bg-purple-50 border-purple-200 text-purple-600" },
+    { value: "cash", label: "Cash", icon: <BsCashCoin className="h-5 w-5" />, color: "bg-green-50 border-green-200 text-green-600" }
   ];
 
   // Get stock status color
@@ -316,7 +376,7 @@ const CreateSaleNew = () => {
     return "bg-green-100 text-green-800";
   };
 
-  // Calculate payment method icon
+  // Get payment method icon
   const getPaymentIcon = (method) => {
     switch (method) {
       case 'cash': return <BsCashCoin className="h-5 w-5" />;
@@ -324,6 +384,20 @@ const CreateSaleNew = () => {
       case 'edahab': return <DollarSign className="h-5 w-5" />;
       default: return <BsCashCoin className="h-5 w-5" />;
     }
+  };
+
+  // Get payment status color
+  const getPaymentStatusColor = () => {
+    if (paidAmount >= dueAmount) return "bg-green-100 text-green-800";
+    if (paidAmount > 0) return "bg-yellow-100 text-yellow-800";
+    return "bg-gray-100 text-gray-800";
+  };
+
+  // Get payment status text
+  const getPaymentStatus = () => {
+    if (paidAmount >= dueAmount) return "Fully Paid";
+    if (paidAmount > 0) return "Partially Paid";
+    return "Pending";
   };
 
   return (
@@ -350,7 +424,7 @@ const CreateSaleNew = () => {
               
               <button
                 onClick={handleCompleteSale}
-                disabled={loading || selectedProducts.length === 0 || !amountPaid || parseFloat(amountPaid) < grandTotal}
+                disabled={loading || selectedProducts.length === 0 || !paymentMethod || !amountDue || !amountPaid}
                 className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center font-semibold"
               >
                 {loading ? (
@@ -713,12 +787,12 @@ const CreateSaleNew = () => {
               </div>
             </div>
 
-            {/* Payment Section */}
+            {/* Payment Section - REORGANIZED AS REQUESTED */}
             <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Payment Details</h2>
               
               <div className="space-y-4">
-                {/* Payment Method */}
+                {/* 1. Payment Method (Zaad, Edahab, Cash) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
                   <div className="grid grid-cols-3 gap-2">
@@ -742,17 +816,45 @@ const CreateSaleNew = () => {
                 </div>
                 
                 {/* Selected Payment Method Display */}
-                <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
-                  <div className="flex items-center">
-                    {getPaymentIcon(paymentMethod)}
-                    <span className="ml-2 font-medium capitalize">{paymentMethod}</span>
+                {paymentMethod && (
+                  <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center">
+                      {getPaymentIcon(paymentMethod)}
+                      <span className="ml-2 font-medium capitalize">{paymentMethod}</span>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Selected
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    Selected
+                )}
+                
+                {/* 2. Amount Due */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount Due</label>
+                  <div className="relative">
+                    <FiDollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                    <input
+                      type="number"
+                      value={amountDue}
+                      onChange={(e) => setAmountDue(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter amount due"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-sm text-gray-500">Calculated: ${grandTotal.toFixed(2)}</span>
+                    <button
+                      onClick={() => setAmountDue(grandTotal.toFixed(2))}
+                      className="text-sm text-blue-600 hover:text-blue-700"
+                    >
+                      Use calculated
+                    </button>
                   </div>
                 </div>
                 
-                {/* Amount Paid */}
+                {/* 3. Amount Paid */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Amount Paid</label>
                   <div className="relative">
@@ -764,70 +866,69 @@ const CreateSaleNew = () => {
                       onChange={(e) => setAmountPaid(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter amount paid"
-                      min={grandTotal}
+                      min="0"
                       step="0.01"
                     />
                   </div>
                   <div className="flex justify-between mt-1">
-                    <span className="text-sm text-gray-500">Required: ${grandTotal.toFixed(2)}</span>
+                    <span className="text-sm text-gray-500">Due: ${dueAmount.toFixed(2)}</span>
                     <button
-                      onClick={() => setAmountPaid(grandTotal.toFixed(2))}
+                      onClick={() => setAmountPaid(dueAmount.toFixed(2))}
                       className="text-sm text-blue-600 hover:text-blue-700"
                     >
-                      Set exact amount
+                      Pay full amount
                     </button>
                   </div>
                 </div>
                 
-                {/* Change */}
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Change:</span>
-                    <span className={`font-bold ${changeAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${changeAmount >= 0 ? changeAmount.toFixed(2) : "0.00"}
-                    </span>
+                {/* Payment Status */}
+                <div className="p-3 rounded-lg flex items-center justify-between" style={{ backgroundColor: getPaymentStatusColor().split(' ')[0], color: getPaymentStatusColor().split(' ')[2] }}>
+                  <div className="flex items-center">
+                    <FiDollarSign className="mr-2" />
+                    <span className="font-medium">{getPaymentStatus()}</span>
                   </div>
-                  {changeAmount < 0 && (
-                    <p className="text-sm text-red-500 mt-1">Insufficient payment</p>
-                  )}
+                  <div className="font-bold">
+                    {remainingBalance > 0 ? `$${remainingBalance.toFixed(2)} Due` : 'Paid in Full'}
+                  </div>
                 </div>
                 
-                {/* Complete Sale Button */}
-                <button
-                  onClick={handleCompleteSale}
-                  disabled={loading || selectedProducts.length === 0 || !amountPaid || parseFloat(amountPaid) < grandTotal}
-                  className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg"
-                >
-                  {loading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <FiShoppingCart className="mr-2 h-5 w-5" />
-                      BUY NOW
-                    </>
-                  )}
-                </button>
+                {/* Change */}
+                {changeAmount > 0 && (
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-600">Change to Return:</span>
+                      <span className="font-bold text-green-700">
+                        ${changeAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 
-                {/* Customer Info */}
+                {/* Customer Information */}
                 <div className="pt-4 border-t border-gray-200">
                   <h3 className="text-sm font-medium text-gray-700 mb-2">Customer Information (Optional)</h3>
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full mb-2 p-2 border border-gray-300 rounded-lg"
-                    placeholder="Customer Name"
-                  />
-                  <input
-                    type="text"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg"
-                    placeholder="Phone Number"
-                  />
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <FiUser className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+                        placeholder="Customer Name"
+                      />
+                    </div>
+                    <div className="relative">
+                      <FiPhone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+                        placeholder="Phone Number"
+                      />
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Notes */}
@@ -841,6 +942,25 @@ const CreateSaleNew = () => {
                     rows="3"
                   />
                 </div>
+                
+                {/* Complete Sale Button */}
+                <button
+                  onClick={handleCompleteSale}
+                  disabled={loading || selectedProducts.length === 0 || !paymentMethod || !amountDue || !amountPaid}
+                  className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <FiShoppingCart className="mr-2 h-5 w-5" />
+                      {paidAmount >= dueAmount ? 'COMPLETE SALE' : 'RECORD PARTIAL PAYMENT'}
+                    </>
+                  )}
+                </button>
               </div>
             </div>
             

@@ -10,10 +10,7 @@ import FinancialLogForm from './components/Admin/FinancialLog';
 import FinancialLogDate from './components/Admin/GetFinancialDate';
 import CreateProduct from './components/products/CreateProduct';
 import Categories from './components/categories/CreateCategories';
-import GetProducts from './components/products/GetProducts';
-import CreateSale from './pages/Homepage';
 import LoanManagement from './components/loans/LoanManagement';
-import DailySales from './components/Admin/DailySales';
 import SalesByDate from './components/Admin/SalesByDate';
 import GetAllUsersDailySales from './components/Admin/UserProducts';
 import GetAllUsersSalesByDate from './components/Admin/UserProductsByDate';
@@ -27,6 +24,8 @@ import ProductsManager from './components/products/GetProducts';
 import CreateSaleNew from './pages/Homepage';
 import GetSales from './components/sales/getSales';
 import Vendor from './components/vendors/Vendor';
+import ExpensesPage from './components/expenses/ExpensesForm';
+import Account from './components/AccountReceivables/Account';
 
 const App = () => {
   const { checkAuth, user, isLoading, authChecked } = useUserStore();
@@ -87,8 +86,10 @@ const App = () => {
           <Route path="UserDailySales" element={<GetAllUsersDailySales />} />
           <Route path="UserProductsByDate" element={<GetAllUsersSalesByDate />} />
           <Route path="stock" element={<Stock />} />
+          <Route path="expense" element={<ExpensesPage />} />
           <Route path="vendor" element={<Vendor />} />
           <Route path="categories" element={<Categories />} />
+          <Route path="Account" element={<Account />} />
           <Route path="loans" element={<LoanManagement />} />
           <Route path="FinancialLogDate" element={<FinancialLogDate />} />
           
