@@ -145,14 +145,6 @@ const Dashboard = ({ activeTab: initialActiveTab }) => {
       gradient: "bg-gradient-to-r from-purple-500 to-purple-600",
       path: "/reports",
     },
-    {
-      id: "users",
-      label: "Users",
-      icon: Users,
-      color: "from-pink-500 to-pink-600",
-      gradient: "bg-gradient-to-r from-purple-500 to-pink-600",
-      path: "/UserDailySales",
-    },
      {
       id: "Sales",
       label: "Sales",

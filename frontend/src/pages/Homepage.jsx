@@ -15,14 +15,15 @@ import {
   FiPercent,
   FiSmartphone,
   FiUser,
-  FiPhone
+  FiPhone,
+  FiChevronDown
 } from "react-icons/fi";
 import {
   BsCashCoin
 } from "react-icons/bs";
 import useProductsStore from "../store/useProductsStore";
 import useSalesStore from "../store/UseSalesStore";
-import { DollarSign, CreditCard } from "lucide-react";
+import { DollarSign } from "lucide-react";
 
 const CreateSaleNew = () => {
   const { fetchProducts } = useProductsStore();
@@ -46,10 +47,10 @@ const CreateSaleNew = () => {
 
   // State management
   const [searchTerm, setSearchTerm] = useState("");
-  const [saleType, setSaleType] = useState("today"); // "today" or "date"
+  const [saleType, setSaleType] = useState("today");
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0]);
   
-  // Payment fields - reorganized as requested
+  // Payment fields
   const [paymentMethod, setPaymentMethod] = useState("");
   const [amountDue, setAmountDue] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
@@ -60,14 +61,16 @@ const CreateSaleNew = () => {
   
   // Other fields
   const [notes, setNotes] = useState("");
-  const [discountType, setDiscountType] = useState("percentage"); // "percentage" or "amount"
+  const [discountType, setDiscountType] = useState("percentage");
   const [discountValue, setDiscountValue] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showPaymentDropdown, setShowPaymentDropdown] = useState(false);
   
   // Refs
   const searchInputRef = useRef(null);
   const amountPaidInputRef = useRef(null);
   const searchResultsRef = useRef(null);
+  const paymentDropdownRef = useRef(null);
 
   // Calculations
   const calculations = getSaleCalculations();
@@ -83,6 +86,17 @@ const CreateSaleNew = () => {
   const dueAmount = parseFloat(amountDue) || grandTotal;
   const remainingBalance = Math.max(0, dueAmount - paidAmount);
   const changeAmount = paidAmount > dueAmount ? paidAmount - dueAmount : 0;
+
+  // Calculate expected money for all products
+  const calculateExpected = (product) => {
+    const discountAmount = (product.sellingPrice * product.discount) / 100;
+    const priceAfterDiscount = product.sellingPrice - discountAmount;
+    return priceAfterDiscount * product.quantity;
+  };
+
+  const totalExpected = selectedProducts.reduce((sum, product) => {
+    return sum + calculateExpected(product);
+  }, 0);
 
   // Fetch initial data
   useEffect(() => {
@@ -114,11 +128,14 @@ const CreateSaleNew = () => {
     }
   }, [searchTerm, searchProducts]);
 
-  // Click outside to close search results
+  // Click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchResultsRef.current && !searchResultsRef.current.contains(event.target)) {
         setShowSearchResults(false);
+      }
+      if (paymentDropdownRef.current && !paymentDropdownRef.current.contains(event.target)) {
+        setShowPaymentDropdown(false);
       }
     };
     
@@ -161,17 +178,6 @@ const CreateSaleNew = () => {
       updateProductDiscount(productId, parseFloat(discount));
     }
   };
-
-  // Calculate expected money for all products
-  const calculateExpected = (product) => {
-    const discountAmount = (product.sellingPrice * product.discount) / 100;
-    const priceAfterDiscount = product.sellingPrice - discountAmount;
-    return priceAfterDiscount * product.quantity;
-  };
-
-  const totalExpected = selectedProducts.reduce((sum, product) => {
-    return sum + calculateExpected(product);
-  }, 0);
 
   // Complete sale
   const handleCompleteSale = async () => {
@@ -254,6 +260,21 @@ const CreateSaleNew = () => {
     } catch (error) {
       toast.error(error.response?.data?.error || error.message || "Failed to complete sale");
     }
+  };
+
+  // Checkout Now function
+  const handleCheckoutNow = () => {
+    if (selectedProducts.length === 0) {
+      toast.error("Please add at least one product");
+      return;
+    }
+
+    // Set amount paid equal to amount due for quick checkout
+    const totalToPay = parseFloat(amountDue) || grandTotal;
+    setAmountPaid(totalToPay.toFixed(2));
+    setPaymentMethod("cash"); // Default to cash for quick checkout
+    
+    toast.success("Ready for checkout! Please confirm payment.");
   };
 
   // Print receipt
@@ -362,12 +383,15 @@ const CreateSaleNew = () => {
     }, 250);
   };
 
-  // Payment methods - reordered as requested
+  // Payment methods
   const paymentMethods = [
-    { value: "zaad", label: "Zaad", icon: <FiSmartphone className="h-5 w-5" />, color: "bg-blue-50 border-blue-200 text-blue-600" },
-    { value: "edahab", label: "Edahab", icon: <DollarSign className="h-5 w-5" />, color: "bg-purple-50 border-purple-200 text-purple-600" },
-    { value: "cash", label: "Cash", icon: <BsCashCoin className="h-5 w-5" />, color: "bg-green-50 border-green-200 text-green-600" }
+    { value: "cash", label: "Cash", icon: <BsCashCoin className="h-4 w-4" /> },
+    { value: "zaad", label: "Zaad", icon: <FiSmartphone className="h-4 w-4" /> },
+    { value: "edahab", label: "Edahab", icon: <DollarSign className="h-4 w-4" /> }
   ];
+
+  // Get selected payment method
+  const selectedPaymentMethod = paymentMethods.find(method => method.value === paymentMethod);
 
   // Get stock status color
   const getStockStatusColor = (stock, threshold = 5) => {
@@ -376,152 +400,65 @@ const CreateSaleNew = () => {
     return "bg-green-100 text-green-800";
   };
 
-  // Get payment method icon
-  const getPaymentIcon = (method) => {
-    switch (method) {
-      case 'cash': return <BsCashCoin className="h-5 w-5" />;
-      case 'zaad': return <FiSmartphone className="h-5 w-5" />;
-      case 'edahab': return <DollarSign className="h-5 w-5" />;
-      default: return <BsCashCoin className="h-5 w-5" />;
-    }
-  };
-
-  // Get payment status color
-  const getPaymentStatusColor = () => {
-    if (paidAmount >= dueAmount) return "bg-green-100 text-green-800";
-    if (paidAmount > 0) return "bg-yellow-100 text-yellow-800";
-    return "bg-gray-100 text-gray-800";
-  };
-
-  // Get payment status text
-  const getPaymentStatus = () => {
-    if (paidAmount >= dueAmount) return "Fully Paid";
-    if (paidAmount > 0) return "Partially Paid";
-    return "Pending";
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">New Sale</h1>
-              <p className="text-gray-600">Create and manage sales transactions</p>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handlePrintReceipt}
-                disabled={selectedProducts.length === 0}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                <FiPrinter className="mr-2" />
-                Print Receipt
-              </button>
-              
-              <button
-                onClick={handleCompleteSale}
-                disabled={loading || selectedProducts.length === 0 || !paymentMethod || !amountDue || !amountPaid}
-                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center font-semibold"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <FiShoppingCart className="mr-2" />
-                    Complete Sale
-                  </>
-                )}
-              </button>
-            </div>
+        <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Create New Sale</h1>
+            <p className="text-gray-600 text-sm mt-1">Search products and complete the transaction</p>
           </div>
-
-          {/* Sale Type Tabs */}
-          <div className="flex mb-6 bg-white rounded-xl p-1 border border-gray-200 shadow-sm max-w-md">
+          
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setSaleType("today")}
-              className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
-                saleType === "today"
-                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
+              onClick={handlePrintReceipt}
+              disabled={selectedProducts.length === 0}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-sm"
             >
-              Today's Sale
-            </button>
-            <button
-              onClick={() => setSaleType("date")}
-              className={`flex-1 py-3 px-4 rounded-xl text-center font-medium transition-all ${
-                saleType === "date"
-                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg"
-                  : "text-gray-600 hover:text-blue-600"
-              }`}
-            >
-              Sale by Date
+              <FiPrinter className="mr-2" />
+              Print
             </button>
           </div>
-
-          {/* Date Selector for Date Tab */}
-          {saleType === "date" && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 bg-white p-4 rounded-xl border border-blue-200 shadow-sm max-w-md"
-            >
-              <label className="block text-gray-700 mb-2 font-medium flex items-center">
-                <FiCalendar className="inline mr-2 text-blue-500" />
-                Select Sale Date
-              </label>
-              <input
-                type="date"
-                value={saleDate}
-                max={new Date().toISOString().split('T')[0]}
-                onChange={(e) => setSaleDate(e.target.value)}
-                className="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </motion.div>
-          )}
         </div>
 
-        {/* Main Content - Split Layout */}
+        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Left Panel - Product Search & Selection (2/3 width) */}
+          {/* Left Column - Cart Section */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Product Search */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-              <div className="relative" ref={searchResultsRef}>
-                <div className="flex items-center mb-4">
-                  <FiSearch className="text-gray-400 mr-2" />
-                  <h2 className="text-lg font-semibold text-gray-800">Search Products</h2>
+            {/* Cart Header */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-800">Cart</h2>
+                <div className="flex items-center text-sm text-gray-500">
+                  <FiPercent className="h-4 w-4 mr-1" />
+                  <span className="line-through">Max Discount: 100%</span>
                 </div>
-                
+              </div>
+            </div>
+
+            {/* Product Search */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="relative" ref={searchResultsRef}>
                 <div className="relative">
+                  <FiSearch className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <input
                     ref={searchInputRef}
                     type="text"
-                    placeholder="Search product by name..."
+                    placeholder="Search products or scan barcodes..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-white placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-white placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  <FiSearch className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-                  
                   {searchTerm && (
                     <button
-                      onClick={() => {
-                        setSearchTerm("");
-                        setShowSearchResults(false);
-                      }}
-                      className="absolute right-3 top-3.5"
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-3 top-3"
                     >
-                      <FiX className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                      <FiX className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                     </button>
                   )}
                 </div>
@@ -533,7 +470,7 @@ const CreateSaleNew = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-96 overflow-y-auto"
+                      className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto"
                     >
                       {searchResults.map((product) => (
                         <div
@@ -562,127 +499,106 @@ const CreateSaleNew = () => {
                   )}
                 </AnimatePresence>
               </div>
-
-              {/* Search Tips */}
-              <div className="mt-4 text-sm text-gray-500">
-                <p>Type to search products. Click on a product to add it to the sale.</p>
-              </div>
             </div>
 
-            {/* Selected Products Table */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                    <FiShoppingCart className="mr-2" />
-                    Selected Products ({selectedProducts.length})
-                  </h2>
-                  {selectedProducts.length > 0 && (
-                    <button
-                      onClick={clearSelectedProducts}
-                      className="text-sm text-red-600 hover:text-red-700 flex items-center"
-                    >
-                      <FiTrash2 className="mr-1 h-4 w-4" />
-                      Clear All
-                    </button>
-                  )}
-                </div>
-              </div>
-
+            {/* Products Table */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount %</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"># Qty</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">$ Price</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">$ Discount</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expected</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {selectedProducts.length > 0 ? (
                       selectedProducts.map((product) => {
-                        const expected = calculateExpected(product);
+                        const total = product.sellingPrice * product.quantity;
+                        const discountAmount = (product.sellingPrice * product.discount) / 100;
+                        const expected = (product.sellingPrice - discountAmount) * product.quantity;
+                        
                         return (
                           <tr key={product._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4">
+                            <td className="px-4 py-3">
                               <div className="flex items-center">
                                 <FiPackage className="h-5 w-5 text-gray-400 mr-2" />
                                 <div>
                                   <p className="font-medium text-gray-900">{product.name}</p>
-                                  <p className="text-sm text-gray-500">Cost: ${product.cost?.toFixed(2) || '0.00'}</p>
                                 </div>
                               </div>
                             </td>
                             
-                            <td className="px-6 py-4">
-                              <div className="flex items-center space-x-2">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center space-x-2 max-w-24">
                                 <button
                                   onClick={() => handleQuantityChange(product._id, product.quantity - 1)}
                                   className="p-1 rounded hover:bg-gray-200"
                                   disabled={product.quantity <= 1}
                                 >
-                                  <FiMinus className="h-4 w-4" />
+                                  <FiMinus className="h-3 w-3" />
                                 </button>
                                 <input
                                   type="number"
                                   value={product.quantity}
                                   onChange={(e) => handleQuantityChange(product._id, parseInt(e.target.value) || 1)}
-                                  className="w-16 p-1 text-center border border-gray-300 rounded"
+                                  className="w-12 p-1 text-center border border-gray-300 rounded text-sm"
                                   min="1"
                                 />
                                 <button
                                   onClick={() => handleQuantityChange(product._id, product.quantity + 1)}
                                   className="p-1 rounded hover:bg-gray-200"
                                 >
-                                  <FiPlus className="h-4 w-4" />
+                                  <FiPlus className="h-3 w-3" />
                                 </button>
                               </div>
                             </td>
                             
-                            <td className="px-6 py-4">
+                            <td className="px-4 py-3">
                               <input
                                 type="number"
                                 value={product.sellingPrice}
                                 onChange={(e) => handlePriceChange(product._id, parseFloat(e.target.value) || 0)}
-                                className="w-24 p-2 border border-gray-300 rounded"
+                                className="w-20 p-1.5 border border-gray-300 rounded text-sm"
                                 min="0"
                                 step="0.01"
                               />
                             </td>
                             
-                            <td className="px-6 py-4 font-medium text-gray-900">
-                              ${(product.sellingPrice * product.quantity).toFixed(2)}
+                            <td className="px-4 py-3 font-medium text-gray-900">
+                              ${total.toFixed(2)}
                             </td>
                             
-                            <td className="px-6 py-4">
+                            <td className="px-4 py-3">
                               <div className="flex items-center">
                                 <input
                                   type="number"
                                   value={product.discount || 0}
                                   onChange={(e) => handleDiscountChange(product._id, parseFloat(e.target.value) || 0)}
-                                  className="w-20 p-2 border border-gray-300 rounded"
+                                  className="w-16 p-1.5 border border-gray-300 rounded text-sm"
                                   min="0"
                                   max="100"
                                   step="0.1"
                                 />
-                                <span className="ml-1 text-gray-500">%</span>
+                                <span className="ml-1 text-gray-500 text-sm">%</span>
                               </div>
                             </td>
                             
-                            <td className="px-6 py-4 font-medium text-green-600">
+                            <td className="px-4 py-3 font-medium text-green-600">
                               ${expected.toFixed(2)}
                             </td>
                             
-                            <td className="px-6 py-4">
+                            <td className="px-4 py-3">
                               <button
                                 onClick={() => removeProductFromSale(product._id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded"
                               >
-                                <FiTrash2 className="h-5 w-5" />
+                                <FiTrash2 className="h-4 w-4" />
                               </button>
                             </td>
                           </tr>
@@ -690,9 +606,10 @@ const CreateSaleNew = () => {
                       })
                     ) : (
                       <tr>
-                        <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
-                          <FiPackage className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p>No products selected. Search and add products above.</p>
+                        <td colSpan="7" className="px-4 py-12 text-center text-gray-500">
+                          <FiShoppingCart className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+                          <p className="text-sm">Your cart is empty</p>
+                          <p className="text-xs text-gray-400 mt-1">Search and add products to get started!</p>
                         </td>
                       </tr>
                     )}
@@ -702,304 +619,260 @@ const CreateSaleNew = () => {
             </div>
           </div>
 
-          {/* Right Panel - Sale Summary & Payment (1/3 width) */}
+          {/* Right Column - Customer Information */}
           <div className="space-y-6">
             
-            {/* Sale Summary */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Sale Summary</h2>
+            {/* Customer Information Card */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Customer Information</h2>
               
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">${calculations.subtotal.toFixed(2)}</span>
+              <div className="space-y-5">
+                {/* Total */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-gray-600">Total:</span>
+                    <span className="text-xl font-bold text-gray-900">${calculations.subtotal.toFixed(2)}</span>
+                  </div>
                 </div>
                 
+                {/* Discount */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-gray-600">Discount: (Max: 100%)</span>
+                    <span className="text-red-600 font-medium">-${discountAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="relative flex-1">
+                      {discountType === "percentage" ? (
+                        <FiPercent className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                      ) : (
+                        <FiDollarSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                      )}
+                      <input
+                        type="number"
+                        value={discountValue}
+                        onChange={(e) => setDiscountValue(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded text-sm"
+                        placeholder={discountType === "percentage" ? "0" : "0.00"}
+                        min="0"
+                        max={discountType === "percentage" ? "100" : calculations.subtotal}
+                        step={discountType === "percentage" ? "1" : "0.01"}
+                      />
+                    </div>
+                    <button
+                      onClick={() => setDiscountType(discountType === "percentage" ? "amount" : "percentage")}
+                      className="ml-2 px-3 py-2 border border-gray-300 rounded text-sm bg-gray-50 hover:bg-gray-100"
+                    >
+                      {discountType === "percentage" ? "%" : "$"}
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Expected */}
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Expected:</span>
+                    <span className="text-xl font-bold text-green-600">${(calculations.subtotal - discountAmount).toFixed(2)}</span>
+                  </div>
+                </div>
+                
+                {/* Payment Method Section */}
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="space-y-4">
+                    {/* Amount paid */}
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Amount paid</label>
+                      <div className="relative">
+                        <FiDollarSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <input
+                          ref={amountPaidInputRef}
+                          type="number"
+                          value={amountPaid}
+                          onChange={(e) => setAmountPaid(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded text-sm"
+                          placeholder="0.00"
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Select Option - DROPDOWN */}
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Select Option</label>
+                      <div className="relative" ref={paymentDropdownRef}>
+                        <button
+                          onClick={() => setShowPaymentDropdown(!showPaymentDropdown)}
+                          className="w-full p-2 border border-gray-300 rounded text-sm text-left flex items-center justify-between bg-white hover:bg-gray-50"
+                        >
+                          <div className="flex items-center">
+                            {selectedPaymentMethod ? (
+                              <>
+                                <span className="mr-2">{selectedPaymentMethod.icon}</span>
+                                <span>{selectedPaymentMethod.label}</span>
+                              </>
+                            ) : (
+                              <span className="text-gray-400">Select payment method</span>
+                            )}
+                          </div>
+                          <FiChevronDown className="h-4 w-4 text-gray-400" />
+                        </button>
+                        
+                        {/* Dropdown menu */}
+                        {showPaymentDropdown && (
+                          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+                            {paymentMethods.map((method) => (
+                              <button
+                                key={method.value}
+                                onClick={() => {
+                                  setPaymentMethod(method.value);
+                                  setShowPaymentDropdown(false);
+                                }}
+                                className="w-full p-3 text-left flex items-center hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                              >
+                                <span className="mr-3">{method.icon}</span>
+                                <span>{method.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Receipt option */}
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Receipt option</label>
+                      <select className="w-full p-2 border border-gray-300 rounded text-sm bg-white">
+                        <option value="">Select receipt option</option>
+                        <option value="print">Print Receipt</option>
+                        <option value="email">Email Receipt</option>
+                        <option value="none">No Receipt</option>
+                      </select>
+                    </div>
+                    
+                    {/* Due date */}
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Due date</label>
+                      <div className="relative">
+                        <FiCalendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <input
+                          type="date"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded text-sm bg-white"
+                          defaultValue={new Date().toISOString().split('T')[0]}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Customer name */}
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Customer name (optional)</label>
+                      <div className="relative">
+                        <FiUser className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded text-sm"
+                          placeholder="Enter customer name"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Customer phone */}
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Customer phone</label>
+                      <div className="flex">
+                        <div className="w-20 p-2 border border-gray-300 border-r-0 rounded-l text-sm bg-gray-50 flex items-center justify-center">
+                          +252
+                        </div>
+                        <div className="relative flex-1">
+                          <FiPhone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-r text-sm"
+                            placeholder="61xxxxxx"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Description */}
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Description</label>
+                      <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                        placeholder="Add notes or description..."
+                        rows="3"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Checkout Now Button */}
+                <button
+                  onClick={handleCheckoutNow}
+                  disabled={selectedProducts.length === 0}
+                  className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm"
+                >
+                  Checkout Now
+                </button>
+              </div>
+            </div>
+
+            {/* Summary Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <h3 className="text-md font-semibold text-gray-800 mb-3">Summary</h3>
+              
+              <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Items:</span>
-                  <span className="font-medium">{calculations.itemCount}</span>
+                  <span>{selectedProducts.length}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Quantity:</span>
-                  <span className="font-medium">{calculations.totalQuantity}</span>
+                  <span>{selectedProducts.reduce((sum, p) => sum + p.quantity, 0)}</span>
                 </div>
                 
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Expected:</span>
-                  <span className="font-medium text-green-600">${totalExpected.toFixed(2)}</span>
+                <div className="flex justify-between pt-2 border-t border-gray-200">
+                  <span className="font-medium">Grand Total:</span>
+                  <span className="font-bold">${grandTotal.toFixed(2)}</span>
                 </div>
                 
-                {/* Discount Input */}
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-600">Discount:</span>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setDiscountType("percentage")}
-                        className={`px-2 py-1 text-sm rounded ${discountType === "percentage" ? 'bg-blue-100 text-blue-600' : 'text-gray-500'}`}
-                      >
-                        %
-                      </button>
-                      <button
-                        onClick={() => setDiscountType("amount")}
-                        className={`px-2 py-1 text-sm rounded ${discountType === "amount" ? 'bg-blue-100 text-blue-600' : 'text-gray-500'}`}
-                      >
-                        $
-                      </button>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    {discountType === "percentage" ? (
-                      <FiPercent className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                    ) : (
-                      <FiDollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                    )}
-                    <input
-                      type="number"
-                      value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
-                      placeholder={discountType === "percentage" ? "Discount %" : "Discount Amount"}
-                      min="0"
-                      max={discountType === "percentage" ? "100" : calculations.subtotal}
-                      step={discountType === "percentage" ? "0.1" : "0.01"}
-                    />
-                  </div>
-                  {discountType === "percentage" && discountValue > 0 && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      Amount: ${((parseFloat(discountValue) || 0) / 100 * calculations.subtotal).toFixed(2)}
-                    </p>
-                  )}
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Discount Amount:</span>
-                  <span className="font-medium text-red-600">-${discountAmount.toFixed(2)}</span>
-                </div>
-                
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-800">Grand Total:</span>
-                    <span className="text-2xl font-bold text-blue-600">${grandTotal.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Section - REORGANIZED AS REQUESTED */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Payment Details</h2>
-              
-              <div className="space-y-4">
-                {/* 1. Payment Method (Zaad, Edahab, Cash) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {paymentMethods.map((method) => (
-                      <button
-                        key={method.value}
-                        onClick={() => setPaymentMethod(method.value)}
-                        className={`p-3 rounded-lg border flex flex-col items-center justify-center transition-all ${
-                          paymentMethod === method.value
-                            ? `${method.color.split(' ')[0]} border-2 ${method.color.split(' ')[1]} ${method.color.split(' ')[2]}`
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                      >
-                        <div className="mb-1">
-                          {method.icon}
-                        </div>
-                        <span className="text-sm font-medium">{method.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Selected Payment Method Display */}
-                {paymentMethod && (
-                  <div className="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
-                    <div className="flex items-center">
-                      {getPaymentIcon(paymentMethod)}
-                      <span className="ml-2 font-medium capitalize">{paymentMethod}</span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Selected
-                    </div>
+                {remainingBalance > 0 && (
+                  <div className="flex justify-between text-amber-600">
+                    <span>Balance Due:</span>
+                    <span className="font-bold">${remainingBalance.toFixed(2)}</span>
                   </div>
                 )}
                 
-                {/* 2. Amount Due */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount Due</label>
-                  <div className="relative">
-                    <FiDollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                    <input
-                      type="number"
-                      value={amountDue}
-                      onChange={(e) => setAmountDue(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter amount due"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <span className="text-sm text-gray-500">Calculated: ${grandTotal.toFixed(2)}</span>
-                    <button
-                      onClick={() => setAmountDue(grandTotal.toFixed(2))}
-                      className="text-sm text-blue-600 hover:text-blue-700"
-                    >
-                      Use calculated
-                    </button>
-                  </div>
-                </div>
-                
-                {/* 3. Amount Paid */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount Paid</label>
-                  <div className="relative">
-                    <FiDollarSign className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                    <input
-                      ref={amountPaidInputRef}
-                      type="number"
-                      value={amountPaid}
-                      onChange={(e) => setAmountPaid(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter amount paid"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  <div className="flex justify-between mt-1">
-                    <span className="text-sm text-gray-500">Due: ${dueAmount.toFixed(2)}</span>
-                    <button
-                      onClick={() => setAmountPaid(dueAmount.toFixed(2))}
-                      className="text-sm text-blue-600 hover:text-blue-700"
-                    >
-                      Pay full amount
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Payment Status */}
-                <div className="p-3 rounded-lg flex items-center justify-between" style={{ backgroundColor: getPaymentStatusColor().split(' ')[0], color: getPaymentStatusColor().split(' ')[2] }}>
-                  <div className="flex items-center">
-                    <FiDollarSign className="mr-2" />
-                    <span className="font-medium">{getPaymentStatus()}</span>
-                  </div>
-                  <div className="font-bold">
-                    {remainingBalance > 0 ? `$${remainingBalance.toFixed(2)} Due` : 'Paid in Full'}
-                  </div>
-                </div>
-                
-                {/* Change */}
                 {changeAmount > 0 && (
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="text-green-600">Change to Return:</span>
-                      <span className="font-bold text-green-700">
-                        ${changeAmount.toFixed(2)}
-                      </span>
-                    </div>
+                  <div className="flex justify-between text-green-600">
+                    <span>Change:</span>
+                    <span className="font-bold">${changeAmount.toFixed(2)}</span>
                   </div>
                 )}
-                
-                {/* Customer Information */}
-                <div className="pt-4 border-t border-gray-200">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Customer Information (Optional)</h3>
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <FiUser className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
-                        placeholder="Customer Name"
-                      />
-                    </div>
-                    <div className="relative">
-                      <FiPhone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
-                        placeholder="Phone Number"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Notes */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg"
-                    placeholder="Additional notes..."
-                    rows="3"
-                  />
-                </div>
                 
                 {/* Complete Sale Button */}
                 <button
                   onClick={handleCompleteSale}
                   disabled={loading || selectedProducts.length === 0 || !paymentMethod || !amountDue || !amountPaid}
-                  className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-semibold text-lg shadow-lg"
+                  className="w-full mt-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
                 >
                   {loading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       Processing...
-                    </>
+                    </div>
                   ) : (
-                    <>
-                      <FiShoppingCart className="mr-2 h-5 w-5" />
-                      {paidAmount >= dueAmount ? 'COMPLETE SALE' : 'RECORD PARTIAL PAYMENT'}
-                    </>
+                    "Complete Sale"
                   )}
                 </button>
               </div>
-            </div>
-            
-            {/* Today's Sales Stats */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                {saleType === "today" ? "Today's Sales" : `Sales on ${saleDate}`}
-              </h2>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Sales:</span>
-                  <span className="font-medium">{salesByDate.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Revenue:</span>
-                  <span className="font-medium text-green-600">
-                    ${salesByDate.reduce((sum, sale) => sum + sale.grandTotal, 0).toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Items:</span>
-                  <span className="font-medium">
-                    {salesByDate.reduce((sum, sale) => sum + sale.totalQuantity, 0)}
-                  </span>
-                </div>
-              </div>
-              
-              {salesByDate.length > 0 && (
-                <button
-                  onClick={() => {
-                    // You can add functionality to view sales details
-                    toast.success(`${salesByDate.length} sales recorded`);
-                  }}
-                  className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                >
-                  View Sales Details
-                </button>
-              )}
             </div>
           </div>
         </div>
