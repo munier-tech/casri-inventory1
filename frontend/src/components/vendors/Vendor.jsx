@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import useVendorPurchaseStore from '../../store/useVendorStore';
-import { 
-  Plus, 
-  Trash2, 
+import {
+  Plus,
+  Trash2,
   Users,
   ShoppingCart,
   DollarSign,
@@ -13,28 +13,18 @@ import {
   AlertCircle,
   RefreshCw,
   Search,
-  Loader2,
-  Filter,
-  Calendar,
+  Loader2, Calendar,
   FileText,
-  Eye,
-  CheckCircle,
-  TrendingUp,
-  TrendingDown,
-  BarChart3,
+  Eye, BarChart3,
   CreditCard as Card,
-  Wallet,
-  Package,
-  Save,
-  Pencil,
-  ExternalLink,
-  ChevronLeft,
+  Wallet, ChevronLeft,
   ChevronRight,
   Smartphone,
   User,
   Lock,
-  Download,
-  Upload
+  Download, Coins,
+  Smartphone as PhoneIcon,
+  CreditCard as CardIcon
 } from 'lucide-react';
 
 // ========== MODALS ==========
@@ -269,7 +259,189 @@ const EditVendorModal = ({ isOpen, onClose, vendor, onUpdate }) => {
   );
 };
 
-// ========== PAYMENT MODAL (NEW) ==========
+// ========== PAYMENT METHOD STATS DASHBOARD ==========
+
+const PaymentMethodDashboard = ({ purchaseRecords }) => {
+  // Calculate payment method statistics
+  const calculatePaymentStats = (purchases) => {
+    const stats = {
+      cash: { 
+        total: 0, 
+        count: 0, 
+        label: 'Cash', 
+        icon: Coins, 
+        color: 'from-green-500 to-green-600',
+        bgColor: 'bg-green-50',
+        textColor: 'text-green-700',
+        borderColor: 'border-green-200'
+      },
+      zaad: { 
+        total: 0, 
+        count: 0, 
+        label: 'Zaad', 
+        icon: PhoneIcon, 
+        color: 'from-blue-500 to-blue-600',
+        bgColor: 'bg-blue-50',
+        textColor: 'text-blue-700',
+        borderColor: 'border-blue-200'
+      },
+      edahab: { 
+        total: 0, 
+        count: 0, 
+        label: 'Edahab', 
+        icon: CardIcon, 
+        color: 'from-purple-500 to-purple-600',
+        bgColor: 'bg-purple-50',
+        textColor: 'text-purple-700',
+        borderColor: 'border-purple-200'
+      }
+    };
+    
+    purchases.forEach(purchase => {
+      const method = purchase.paymentMethod || 'cash';
+      const amountPaid = purchase.amountPaid || 0;
+      
+      if (stats[method]) {
+        stats[method].total += amountPaid;
+        stats[method].count += 1;
+      }
+    });
+    
+    return stats;
+  };
+
+  const paymentStats = calculatePaymentStats(purchaseRecords);
+  const totalPaid = purchaseRecords.reduce((sum, purchase) => sum + (purchase.amountPaid || 0), 0);
+  
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount || 0);
+  };
+
+  // Calculate percentages
+  const cashPercentage = totalPaid > 0 ? (paymentStats.cash.total / totalPaid * 100).toFixed(1) : 0;
+  const zaadPercentage = totalPaid > 0 ? (paymentStats.zaad.total / totalPaid * 100).toFixed(1) : 0;
+  const edahabPercentage = totalPaid > 0 ? (paymentStats.edahab.total / totalPaid * 100).toFixed(1) : 0;
+
+  return (
+    <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900">Payment Methods Dashboard</h3>
+          <p className="text-gray-600 mt-2">Total Amount Paid: <span className="font-bold text-green-600 text-xl">{formatCurrency(totalPaid)}</span></p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-600">Total Transactions</p>
+          <p className="text-2xl font-bold text-gray-900">{purchaseRecords.length}</p>
+        </div>
+      </div>
+      
+      {/* Payment Method Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {Object.entries(paymentStats).map(([method, data]) => {
+          const Icon = data.icon;
+          const percentage = totalPaid > 0 ? (data.total / totalPaid * 100).toFixed(1) : 0;
+          
+          return (
+            <div 
+              key={method}
+              className={`p-6 rounded-xl border-2 hover:shadow-xl transition-all duration-300 ${data.borderColor} ${data.bgColor}`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-xl bg-gradient-to-r ${data.color} shadow-md`}>
+                  <Icon className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-medium text-gray-600">Transactions</div>
+                  <div className="text-2xl font-bold text-gray-900">{data.count}</div>
+                </div>
+              </div>
+              
+              <h4 className="text-lg font-bold text-gray-900 mb-1">{data.label}</h4>
+              <div className="text-3xl font-bold mb-3">{formatCurrency(data.total)}</div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Percentage:</span>
+                  <span className={`font-bold ${data.textColor}`}>
+                    {percentage}%
+                  </span>
+                </div>
+                
+                {/* Progress bar */}
+                <div className="mt-3">
+                  <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-1000 bg-gradient-to-r ${data.color}`}
+                      style={{ width: `${Math.min(percentage, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Summary Stats */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h4 className="text-lg font-bold text-gray-900 mb-4">Payment Summary</h4>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-1">Cash Transactions</div>
+            <div className="text-2xl font-bold text-green-600">{paymentStats.cash.count}</div>
+            <div className="text-sm text-gray-500">{formatCurrency(paymentStats.cash.total)}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-1">Zaad Transactions</div>
+            <div className="text-2xl font-bold text-blue-600">{paymentStats.zaad.count}</div>
+            <div className="text-sm text-gray-500">{formatCurrency(paymentStats.zaad.total)}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-1">Edahab Transactions</div>
+            <div className="text-2xl font-bold text-purple-600">{paymentStats.edahab.count}</div>
+            <div className="text-sm text-gray-500">{formatCurrency(paymentStats.edahab.total)}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-1">Average Payment</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {formatCurrency(totalPaid / purchaseRecords.length || 0)}
+            </div>
+            <div className="text-sm text-gray-500">per transaction</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pie Chart Visualization */}
+      <div className="mt-6">
+        <div className="flex items-center justify-center space-x-6">
+          {totalPaid > 0 && (
+            <>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gradient-to-r from-green-500 to-green-600 rounded-full mr-2"></div>
+                <span className="text-sm text-gray-600">Cash: {cashPercentage}%</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full mr-2"></div>
+                <span className="text-sm text-gray-600">Zaad: {zaadPercentage}%</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full mr-2"></div>
+                <span className="text-sm text-gray-600">Edahab: {edahabPercentage}%</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ========== PAY VENDOR MODAL ==========
 
 const PayVendorModal = ({ purchase, onClose, onSuccess }) => {
   const { updatePurchase } = useVendorPurchaseStore();
@@ -1088,6 +1260,7 @@ const PurchasesTab = ({
   const [purchaseToDelete, setPurchaseToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('all');
   const itemsPerPage = 10;
 
   const handleDeleteClick = (purchase) => {
@@ -1180,6 +1353,11 @@ const PurchasesTab = ({
       if (purchaseDate > endDate) return false;
     }
 
+    // Add payment method filter
+    if (selectedPaymentMethod !== 'all' && selectedPaymentMethod !== purchase.paymentMethod) {
+      return false;
+    }
+
     return matchesSearch;
   });
 
@@ -1190,8 +1368,18 @@ const PurchasesTab = ({
 
   const stats = getPurchaseStats();
 
+  // Calculate payment method distribution for filter dropdown
+  const paymentMethodDistribution = purchases.reduce((acc, purchase) => {
+    const method = purchase.paymentMethod || 'cash';
+    acc[method] = (acc[method] || 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <>
+      {/* Payment Method Dashboard */}
+      <PaymentMethodDashboard purchaseRecords={purchases} />
+
       {/* Stats and Create Button Row */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
         <div className="lg:col-span-3">
@@ -1261,7 +1449,7 @@ const PurchasesTab = ({
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Vendor</label>
               <select
@@ -1285,6 +1473,25 @@ const PurchasesTab = ({
                 onChange={(e) => onFilterChange({ startDate: e.target.value || null })}
                 className="w-full px-3 py-2.5 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+              <select
+                value={selectedPaymentMethod}
+                onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                className="w-full px-3 py-2.5 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Methods</option>
+                <option value="cash">
+                  Cash ({paymentMethodDistribution.cash || 0})
+                </option>
+                <option value="zaad">
+                  Zaad ({paymentMethodDistribution.zaad || 0})
+                </option>
+                <option value="edahab">
+                  Edahab ({paymentMethodDistribution.edahab || 0})
+                </option>
+              </select>
             </div>
           </div>
         </div>
@@ -1424,13 +1631,28 @@ const PurchasesTab = ({
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              balance > 0 ? 'bg-red-100 text-red-800' :
-                              balance < 0 ? 'bg-purple-100 text-purple-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {balance > 0 ? 'Pending' : balance < 0 ? 'Overpaid' : 'Paid'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                balance > 0 ? 'bg-red-100 text-red-800' :
+                                balance < 0 ? 'bg-purple-100 text-purple-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {balance > 0 ? 'Pending' : balance < 0 ? 'Overpaid' : 'Paid'}
+                              </span>
+                              <span className={`p-1 rounded-full ${
+                                purchase.paymentMethod === 'cash' ? 'bg-green-100' :
+                                purchase.paymentMethod === 'zaad' ? 'bg-blue-100' :
+                                'bg-purple-100'
+                              }`}>
+                                {purchase.paymentMethod === 'cash' ? (
+                                  <Wallet className="w-3 h-3 text-green-600" />
+                                ) : purchase.paymentMethod === 'zaad' ? (
+                                  <Smartphone className="w-3 h-3 text-blue-600" />
+                                ) : (
+                                  <CreditCard className="w-3 h-3 text-purple-600" />
+                                )}
+                              </span>
+                            </div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
@@ -1726,7 +1948,7 @@ const Vendor = () => {
                 </div>
                 Vendor & Purchase Management
               </h1>
-              <p className="text-gray-600 mt-2">Manage vendors, create purchases, and view records in one place</p>
+              <p className="text-gray-600 mt-2">Manage vendors, create purchases, and track payment methods</p>
             </div>
             <div className="flex gap-2">
               <button 

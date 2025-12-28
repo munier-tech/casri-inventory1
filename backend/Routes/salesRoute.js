@@ -16,7 +16,9 @@ import {
   getAllUsersSalesByDate,
   // Add these new imports
   getAccountsReceivable,
-  addPaymentToSale  // ADD THIS IMPORT!
+  addPaymentToSale,  // ADD THIS IMPORT!
+  getPaymentMethodsStats,
+  getPaymentMethodTransactions
 } from "../Controllers/salesController.js";
 import { adminRoute, protectedRoute } from "../middlewares/authMiddleware.js";
 
@@ -58,5 +60,7 @@ router.get("/daily/my", protectedRoute, getMyDailySales);
 router.get("/daily/users", protectedRoute, adminRoute, getUsersDailySales);
 router.get("/date/:date", protectedRoute, getSalesByDate);
 router.get("/all/date/:date", protectedRoute, adminRoute, getAllUsersSalesByDate);
+router.get('/payment-methods/stats', protectedRoute, getPaymentMethodsStats);
+router.get('/payment-methods/:method/transactions/:period', protectedRoute, getPaymentMethodTransactions);
 
 export default router;

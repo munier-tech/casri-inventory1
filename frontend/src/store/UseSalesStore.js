@@ -11,6 +11,9 @@ const useSalesStore = create((set, get) => ({
   currentSale: null,
   dailySummary: null,
   salesByDate: [],
+  paymentMethodsStats: null,
+  paymentMethodTransactions: [],
+  selectedPaymentMethod: 'all',
 
   // -------------------- PRODUCT SEARCH --------------------
   searchProducts: async (searchTerm) => {
@@ -29,6 +32,42 @@ const useSalesStore = create((set, get) => ({
       });
     }
   },
+
+  fetchPaymentMethodsStats: async () => {
+  set({ loading: true, error: null });
+  try {
+    const res = await axios.get("/sales/payment-methods/stats");
+    set({ 
+      paymentMethodsStats: res.data.data,
+      loading: false 
+    });
+    return res.data;
+  } catch (err) {
+    set({
+      error: err.response?.data?.error || "Failed to fetch payment methods statistics",
+      loading: false,
+    });
+  }
+},
+
+// Fetch transactions for specific payment method
+fetchPaymentMethodTransactions: async (method, period = 'today') => {
+  set({ loading: true, error: null });
+  try {
+    const res = await axios.get(`/sales/payment-methods/${method}/transactions/${period}`);
+    set({ 
+      paymentMethodTransactions: res.data.data.transactions || [],
+      selectedPaymentMethod: method,
+      loading: false 
+    });
+    return res.data;
+  } catch (err) {
+    set({
+      error: err.response?.data?.error || "Failed to fetch payment method transactions",
+      loading: false,
+    });
+  }
+},
 
   // -------------------- SELECTED PRODUCTS MANAGEMENT --------------------
   addProductToSale: (product, quantity = 1, sellingPrice = null) => {

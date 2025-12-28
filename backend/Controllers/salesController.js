@@ -1326,3 +1326,219 @@ export const addPaymentToSale = async (req, res) => {
     });
   }
 };
+
+// Add this to your salesController.js file
+
+// ✅ Get Payment Methods Statistics for Dashboard
+export const getPaymentMethodsStats = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const today = dayjs().startOf('day').toDate();
+    
+    // Get today's stats
+    const todayStats = await Sale.aggregate([
+      {
+        $match: {
+          user: userId,
+          createdAt: { $gte: today }
+        }
+      },
+      {
+        $group: {
+          _id: "$paymentMethod",
+          count: { $sum: 1 },
+          totalAmountDue: { $sum: "$amountDue" },
+          totalAmountPaid: { $sum: "$amountPaid" },
+          totalRemainingBalance: { $sum: "$remainingBalance" },
+          totalSales: { $sum: "$grandTotal" }
+        }
+      },
+      {
+        $sort: { totalAmountPaid: -1 }
+      }
+    ]);
+
+    // Get last 7 days stats
+    const last7Days = dayjs().subtract(7, 'day').startOf('day').toDate();
+    const weeklyStats = await Sale.aggregate([
+      {
+        $match: {
+          user: userId,
+          createdAt: { $gte: last7Days }
+        }
+      },
+      {
+        $group: {
+          _id: "$paymentMethod",
+          count: { $sum: 1 },
+          totalAmountDue: { $sum: "$amountDue" },
+          totalAmountPaid: { $sum: "$amountPaid" },
+          totalSales: { $sum: "$grandTotal" }
+        }
+      },
+      {
+        $sort: { totalAmountPaid: -1 }
+      }
+    ]);
+
+    // Get monthly stats
+    const startOfMonth = dayjs().startOf('month').toDate();
+    const monthlyStats = await Sale.aggregate([
+      {
+        $match: {
+          user: userId,
+          createdAt: { $gte: startOfMonth }
+        }
+      },
+      {
+        $group: {
+          _id: "$paymentMethod",
+          count: { $sum: 1 },
+          totalAmountDue: { $sum: "$amountDue" },
+          totalAmountPaid: { $sum: "$amountPaid" },
+          totalSales: { $sum: "$grandTotal" }
+        }
+      },
+      {
+        $sort: { totalAmountPaid: -1 }
+      }
+    ]);
+
+    // Format the response to include all payment methods
+    const allPaymentMethods = ['cash', 'zaad', 'edahab', 'credit'];
+    
+    const formatStats = (stats) => {
+      const formatted = {};
+      
+      // Initialize all payment methods
+      allPaymentMethods.forEach(method => {
+        formatted[method] = {
+          count: 0,
+          totalAmountDue: 0,
+          totalAmountPaid: 0,
+          totalSales: 0,
+          totalRemainingBalance: 0
+        };
+      });
+      
+      // Populate with actual data
+      stats.forEach(stat => {
+        if (formatted[stat._id]) {
+          formatted[stat._id] = {
+            count: stat.count,
+            totalAmountDue: stat.totalAmountDue,
+            totalAmountPaid: stat.totalAmountPaid,
+            totalSales: stat.totalSales,
+            totalRemainingBalance: stat.totalRemainingBalance || 0
+          };
+        }
+      });
+      
+      return formatted;
+    };
+
+    res.status(200).json({
+      success: true,
+      data: {
+        today: formatStats(todayStats),
+        weekly: formatStats(weeklyStats),
+        monthly: formatStats(monthlyStats),
+        allPaymentMethods
+      },
+      summary: {
+        todayTotal: todayStats.reduce((sum, stat) => sum + stat.totalAmountPaid, 0),
+        weeklyTotal: weeklyStats.reduce((sum, stat) => sum + stat.totalAmountPaid, 0),
+        monthlyTotal: monthlyStats.reduce((sum, stat) => sum + stat.totalAmountPaid, 0)
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching payment methods stats:", error);
+    res.status(500).json({
+      success: false,
+      error: "Error fetching payment methods statistics",
+      details: error.message
+    });
+  }
+};
+
+// ✅ Get Payment Method Transactions (for detailed view)
+export const getPaymentMethodTransactions = async (req, res) => {
+  try {
+    const { method, period = 'today' } = req.params;
+    const userId = req.user._id;
+    
+    // Validate payment method
+    const validMethods = ['cash', 'zaad', 'edahab', 'credit'];
+    if (!validMethods.includes(method)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid payment method. Valid options: ${validMethods.join(', ')}`
+      });
+    }
+    
+    let dateFilter = {};
+    const now = dayjs();
+    
+    switch (period) {
+      case 'today':
+        dateFilter = {
+          $gte: now.startOf('day').toDate(),
+          $lte: now.endOf('day').toDate()
+        };
+        break;
+      case 'week':
+        dateFilter = {
+          $gte: now.subtract(7, 'day').startOf('day').toDate(),
+          $lte: now.endOf('day').toDate()
+        };
+        break;
+      case 'month':
+        dateFilter = {
+          $gte: now.startOf('month').toDate(),
+          $lte: now.endOf('month').toDate()
+        };
+        break;
+      default:
+        dateFilter = {
+          $gte: now.startOf('day').toDate(),
+          $lte: now.endOf('day').toDate()
+        };
+    }
+    
+    const transactions = await Sale.find({
+      user: userId,
+      paymentMethod: method,
+      createdAt: dateFilter
+    })
+    .populate('user', 'username')
+    .sort({ createdAt: -1 })
+    .lean();
+    
+    // Calculate totals for this method
+    const totals = transactions.reduce((acc, transaction) => ({
+      totalAmountDue: acc.totalAmountDue + (transaction.amountDue || 0),
+      totalAmountPaid: acc.totalAmountPaid + (transaction.amountPaid || 0),
+      totalRemainingBalance: acc.totalRemainingBalance + (transaction.remainingBalance || 0),
+      count: acc.count + 1
+    }), { totalAmountDue: 0, totalAmountPaid: 0, totalRemainingBalance: 0, count: 0 });
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        method,
+        period,
+        transactions,
+        totals,
+        count: transactions.length
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error fetching payment method transactions:", error);
+    res.status(500).json({
+      success: false,
+      error: "Error fetching payment method transactions",
+      details: error.message
+    });
+  }
+};
