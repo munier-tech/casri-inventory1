@@ -145,14 +145,16 @@ const Dashboard = ({ activeTab: initialActiveTab }) => {
       gradient: "bg-gradient-to-r from-purple-500 to-purple-600",
       path: "/reports",
     },
-     {
+    {
       id: "Sales",
       label: "Sales",
       icon: BsCart,
-      color: "bg-gradient-to-r from-purple-500 to-purple-600",
+      color: "from-pink-500 to-pink-600",
+      gradient: "bg-gradient-to-r from-purple-500 to-pink-600",
       path: "/GetSales",
       desc: "View today's sales report",
-    }
+
+    },
   ];
 
   const quickAccessCards = [
