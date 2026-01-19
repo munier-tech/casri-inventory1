@@ -259,6 +259,7 @@ const EditVendorModal = ({ isOpen, onClose, vendor, onUpdate }) => {
   );
 };
 
+<<<<<<< HEAD
 // ========== CREATE PURCHASE MODAL ==========
 
 const CreatePurchaseModal = ({ isOpen, onClose, vendors, onCreate }) => {
@@ -467,6 +468,8 @@ const CreatePurchaseModal = ({ isOpen, onClose, vendors, onCreate }) => {
   );
 };
 
+=======
+>>>>>>> ef125f96a9239af475aa1ff12690122dd8b4a0e4
 // ========== PAYMENT METHOD STATS DASHBOARD ==========
 
 const PaymentMethodDashboard = ({ purchaseRecords }) => {
@@ -2084,6 +2087,7 @@ const Vendor = () => {
   };
 
   // Handle purchase creation
+<<<<<<< HEAD
   const handleCreatePurchase = async (purchaseData) => {
     console.log('Creating purchase with data:', purchaseData);
     try {
@@ -2100,6 +2104,10 @@ const Vendor = () => {
       alert('An error occurred while creating the purchase');
       return { success: false, error: error.message };
     }
+=======
+  const handleCreatePurchase = () => {
+    setShowPurchaseModal(true);
+>>>>>>> ef125f96a9239af475aa1ff12690122dd8b4a0e4
   };
 
   // Handle purchase update
@@ -2238,7 +2246,11 @@ const Vendor = () => {
 
         {activeTab === 'purchases' && (
           <PurchasesTab
+<<<<<<< HEAD
             onCreatePurchaseClick={() => setShowPurchaseModal(true)}
+=======
+            onCreatePurchaseClick={handleCreatePurchase}
+>>>>>>> ef125f96a9239af475aa1ff12690122dd8b4a0e4
             purchases={purchaseRecords}
             vendors={vendors}
             isLoading={isLoadingPurchases}
@@ -2270,6 +2282,7 @@ const Vendor = () => {
           onUpdate={handleUpdateVendor}
         />
 
+<<<<<<< HEAD
         {/* Create Purchase Modal */}
         <CreatePurchaseModal
           isOpen={showPurchaseModal}
@@ -2278,6 +2291,8 @@ const Vendor = () => {
           onCreate={handleCreatePurchase}
         />
 
+=======
+>>>>>>> ef125f96a9239af475aa1ff12690122dd8b4a0e4
         {/* Payment Modal */}
         {showPayModal && selectedPurchase && (
           <PayVendorModal
